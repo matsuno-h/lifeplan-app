@@ -20,6 +20,18 @@ interface IncomeExpenseTabProps {
   onReorder: (id: string, type: 'income' | 'expense' | 'education' | 'lifeEvent', direction: 'up' | 'down') => void;
 }
 
+// Helper to safely parse formatted string input
+const parseFormattedInput = (value: string | null): number => {
+  if (!value) return 0;
+  return parseInt(value.replace(/,/g, '') || '0');
+};
+
+// Helper to safely parse formatted float input
+const parseFloatFormattedInput = (value: string | null): number => {
+  if (!value) return 0;
+  return parseFloat(value.replace(/,/g, '') || '0');
+};
+
 export function IncomeExpenseTab({
   incomes,
   expenses,
@@ -47,10 +59,10 @@ export function IncomeExpenseTab({
     const formData = new FormData(e.currentTarget);
     const income = {
       name: formData.get('income_name') as string,
-      start_age: parseInt(formData.get('income_start_age') as string),
-      end_age: parseInt(formData.get('income_end_age') as string),
-      amount: parseInt(formData.get('income_amount') as string),
-      growth_rate: parseFloat(formData.get('income_growth_rate') as string) || 0,
+      start_age: parseFormattedInput(formData.get('income_start_age') as string),
+      end_age: parseFormattedInput(formData.get('income_end_age') as string),
+      amount: parseFormattedInput(formData.get('income_amount') as string),
+      growth_rate: parseFloatFormattedInput(formData.get('income_growth_rate') as string) || 0,
     };
 
     if (editingIncomeId) {
@@ -69,7 +81,7 @@ export function IncomeExpenseTab({
       (form.elements.namedItem('income_name') as HTMLInputElement).value = income.name;
       (form.elements.namedItem('income_start_age') as HTMLInputElement).value = income.start_age.toString();
       (form.elements.namedItem('income_end_age') as HTMLInputElement).value = income.end_age.toString();
-      (form.elements.namedItem('income_amount') as HTMLInputElement).value = income.amount.toString();
+      (form.elements.namedItem('income_amount') as HTMLInputElement).value = income.amount.toLocaleString();
       (form.elements.namedItem('income_growth_rate') as HTMLInputElement).value = income.growth_rate.toString();
     }
   };
@@ -79,10 +91,10 @@ export function IncomeExpenseTab({
     const formData = new FormData(e.currentTarget);
     const expense = {
       name: formData.get('expense_name') as string,
-      start_age: parseInt(formData.get('expense_start_age') as string),
-      end_age: parseInt(formData.get('expense_end_age') as string),
-      amount: parseInt(formData.get('expense_amount') as string),
-      inflation_rate: parseFloat(formData.get('expense_inflation_rate') as string) || 0,
+      start_age: parseFormattedInput(formData.get('expense_start_age') as string),
+      end_age: parseFormattedInput(formData.get('expense_end_age') as string),
+      amount: parseFormattedInput(formData.get('expense_amount') as string),
+      inflation_rate: parseFloatFormattedInput(formData.get('expense_inflation_rate') as string) || 0,
     };
 
     if (editingExpenseId) {
@@ -101,7 +113,7 @@ export function IncomeExpenseTab({
       (form.elements.namedItem('expense_name') as HTMLInputElement).value = expense.name;
       (form.elements.namedItem('expense_start_age') as HTMLInputElement).value = expense.start_age.toString();
       (form.elements.namedItem('expense_end_age') as HTMLInputElement).value = expense.end_age.toString();
-      (form.elements.namedItem('expense_amount') as HTMLInputElement).value = expense.amount.toString();
+      (form.elements.namedItem('expense_amount') as HTMLInputElement).value = expense.amount.toLocaleString();
       (form.elements.namedItem('expense_inflation_rate') as HTMLInputElement).value = (expense.inflation_rate || 0).toString();
     }
   };
@@ -112,9 +124,9 @@ export function IncomeExpenseTab({
     const education = {
       owner_id: formData.get('education_owner_id') as string,
       name: formData.get('education_name') as string,
-      start_age: parseInt(formData.get('education_start_age') as string),
-      end_age: parseInt(formData.get('education_end_age') as string),
-      amount: parseInt(formData.get('education_amount') as string),
+      start_age: parseFormattedInput(formData.get('education_start_age') as string),
+      end_age: parseFormattedInput(formData.get('education_end_age') as string),
+      amount: parseFormattedInput(formData.get('education_amount') as string),
     };
 
     if (editingEducationId) {
@@ -134,7 +146,7 @@ export function IncomeExpenseTab({
       (form.elements.namedItem('education_name') as HTMLInputElement).value = edu.name;
       (form.elements.namedItem('education_start_age') as HTMLInputElement).value = edu.start_age.toString();
       (form.elements.namedItem('education_end_age') as HTMLInputElement).value = edu.end_age.toString();
-      (form.elements.namedItem('education_amount') as HTMLInputElement).value = edu.amount.toString();
+      (form.elements.namedItem('education_amount') as HTMLInputElement).value = edu.amount.toLocaleString();
     }
   };
 
@@ -143,8 +155,8 @@ export function IncomeExpenseTab({
     const formData = new FormData(e.currentTarget);
     const lifeEvent = {
       name: formData.get('event_name') as string,
-      age: parseInt(formData.get('event_age') as string),
-      cost: parseInt(formData.get('event_cost') as string),
+      age: parseFormattedInput(formData.get('event_age') as string),
+      cost: parseFormattedInput(formData.get('event_cost') as string),
     };
 
     if (editingLifeEventId) {
@@ -162,7 +174,7 @@ export function IncomeExpenseTab({
     if (form) {
       (form.elements.namedItem('event_name') as HTMLInputElement).value = event.name;
       (form.elements.namedItem('event_age') as HTMLInputElement).value = event.age.toString();
-      (form.elements.namedItem('event_cost') as HTMLInputElement).value = event.cost.toString();
+      (form.elements.namedItem('event_cost') as HTMLInputElement).value = event.cost.toLocaleString();
     }
   };
 
@@ -189,7 +201,7 @@ export function IncomeExpenseTab({
               <label className="block text-sm font-medium text-gray-700 mb-1">収入額 (年額・手取り)</label>
               <div className="flex items-center">
                 <input
-                  type="number"
+                  type="text" // Changed to text for formatting
                   name="income_amount"
                   placeholder="400"
                   className="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm"
@@ -225,7 +237,7 @@ export function IncomeExpenseTab({
               <label className="block text-sm font-medium text-gray-700 mb-1">変動率 (昇給など)</label>
               <div className="flex items-center">
                 <input
-                  type="number"
+                  type="text" // Changed to text for consistency
                   name="income_growth_rate"
                   placeholder="1.0"
                   defaultValue="0"
@@ -268,7 +280,7 @@ export function IncomeExpenseTab({
                   <span className="text-gray-500 ml-2">
                     {income.start_age}〜{income.end_age}歳
                   </span>
-                  <span className="text-gray-600 ml-2">{income.amount}万円/年</span>
+                  <span className="text-gray-600 ml-2">{income.amount.toLocaleString()}万円/年</span>
                 </div>
                 <div className="flex space-x-1">
                   {index > 0 && (
@@ -331,7 +343,7 @@ export function IncomeExpenseTab({
               <label className="block text-sm font-medium text-gray-700 mb-1">金額 (年額)</label>
               <div className="flex items-center">
                 <input
-                  type="number"
+                  type="text" // Changed to text for formatting
                   name="expense_amount"
                   placeholder="250"
                   className="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm"
@@ -367,7 +379,7 @@ export function IncomeExpenseTab({
               <label className="block text-sm font-medium text-gray-700 mb-1">物価上昇率</label>
               <div className="flex items-center">
                 <input
-                  type="number"
+                  type="text" // Changed to text for consistency
                   name="expense_inflation_rate"
                   placeholder="0.0"
                   defaultValue="0"
@@ -413,7 +425,7 @@ export function IncomeExpenseTab({
                   <span className="text-gray-500 ml-2">
                     {expense.start_age}〜{expense.end_age}歳
                   </span>
-                  <span className="text-gray-600 ml-2">{expense.amount}万円/年</span>
+                  <span className="text-gray-600 ml-2">{expense.amount.toLocaleString()}万円/年</span>
                 </div>
                 <div className="flex space-x-1">
                   {index > 0 && (
@@ -512,7 +524,7 @@ export function IncomeExpenseTab({
               <label className="block text-sm font-medium text-gray-700 mb-1">費用 (年額)</label>
               <div className="flex items-center">
                 <input
-                  type="number"
+                  type="text" // Changed to text for formatting
                   name="education_amount"
                   placeholder="100"
                   className="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm"
@@ -557,7 +569,7 @@ export function IncomeExpenseTab({
                     <span className="text-gray-500 ml-2">
                       {edu.start_age}〜{edu.end_age}歳
                     </span>
-                    <span className="text-gray-600 ml-2">{edu.amount}万円/年</span>
+                    <span className="text-gray-600 ml-2">{edu.amount.toLocaleString()}万円/年</span>
                   </div>
                   <div className="flex space-x-1">
                     {index > 0 && (
@@ -635,7 +647,7 @@ export function IncomeExpenseTab({
             <label className="block text-sm font-medium text-gray-700 mb-1">費用</label>
             <div className="flex items-center">
               <input
-                type="number"
+                type="text" // Changed to text for formatting
                 name="event_cost"
                 placeholder="3000"
                 className="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm"
@@ -681,7 +693,7 @@ export function IncomeExpenseTab({
                       <span className="text-gray-500 ml-2">{event.age}歳</span>
                       <span className="text-gray-600 ml-2">
                         {event.cost > 0 ? '+' : ''}
-                        {event.cost}万円
+                        {event.cost.toLocaleString()}万円
                       </span>
                     </div>
                     <div className="flex space-x-1">

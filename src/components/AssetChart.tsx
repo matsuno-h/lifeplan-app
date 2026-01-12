@@ -1,14 +1,17 @@
-import { Line } from 'react-chartjs-2';
+import { Chart } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
   Title,
   Tooltip,
   Legend,
-  Filler
+  Filler,
+  ChartData,
+  ChartOptions
 } from 'chart.js';
 import { CashFlowData } from '../types';
 
@@ -17,6 +20,7 @@ ChartJS.register(
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
   Title,
   Tooltip,
   Legend,
@@ -38,25 +42,40 @@ export function AssetChart({ data }: AssetChartProps) {
     );
   }
 
-  const chartData = {
+  const chartData: ChartData<'bar' | 'line'> = {
     labels: data.map(d => `${d.age}歳`),
     datasets: [
       {
-        label: '資産残高',
+        type: 'line' as const,
+        label: '総資産残高',
         data: data.map(d => d.balance),
-        borderColor: 'rgb(59, 130, 246)',
+        borderColor: 'rgb(59, 130, 246)', // Blue
         backgroundColor: 'rgba(59, 130, 246, 0.1)',
         fill: true,
         tension: 0.1,
-        pointRadius: 2,
+        pointRadius: 0,
         pointHoverRadius: 5,
+        order: 1, // Draw on top
+      },
+      {
+        type: 'bar' as const,
+        label: '年間貯蓄額',
+        data: data.map(d => d.yearlySavings),
+        backgroundColor: 'rgba(16, 185, 129, 0.6)', // Emerald Green
+        borderColor: 'rgb(16, 185, 129)',
+        borderWidth: 1,
+        order: 2, // Draw behind
       }
     ]
   };
 
-  const options = {
+  const options: ChartOptions<'bar' | 'line'> = {
     responsive: true,
     maintainAspectRatio: false,
+    interaction: {
+      mode: 'index',
+      intersect: false,
+    },
     plugins: {
       legend: {
         display: true,
@@ -87,7 +106,7 @@ export function AssetChart({ data }: AssetChartProps) {
         },
         title: {
           display: true,
-          text: '資産残高（万円）'
+          text: '金額（万円）'
         }
       },
       x: {
@@ -98,6 +117,9 @@ export function AssetChart({ data }: AssetChartProps) {
         ticks: {
           maxRotation: 45,
           minRotation: 45
+        },
+        grid: {
+          display: false
         }
       }
     }
@@ -105,7 +127,7 @@ export function AssetChart({ data }: AssetChartProps) {
 
   return (
     <div className="relative" style={{ height: '400px', width: '100%' }}>
-      <Line data={chartData} options={options} />
+      <Chart type='bar' data={chartData} options={options} />
     </div>
   );
 }

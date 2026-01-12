@@ -90,8 +90,10 @@ export interface Housing {
 export interface Asset {
   id: string;
   name: string;
+  type?: string; // 資産の種類
   current_value: number;
   yearly_contribution: number;
+  accumulation_end_age?: number; // 積立終了年齢
   return_rate: number;
   withdrawal_age?: number;
   withdrawal_amount?: number;
@@ -100,17 +102,24 @@ export interface Asset {
 export interface RealEstate {
   id: string;
   name: string;
+  
+  // 購入情報
+  purchase_date: string; // YYYY-MM
   purchase_price: number;
-  current_value: number;
-  purchase_age: number;
-  initial_cost?: number;
-  loan_amount?: number;
-  loan_rate?: number;
-  loan_payments?: number;
-  rent_income?: number;
-  maintenance_cost?: number;
-  tax?: number;
-  sell_date?: string;
+  initial_cost: number;
+  
+  // ローン設定
+  loan_amount: number;
+  loan_rate: number; // %
+  loan_duration: number; // 回数 (months)
+  
+  // 運用収支
+  rent_income: number; // 月額
+  maintenance_cost: number; // 月額
+  property_tax: number; // 年額
+  
+  // 売却設定 (任意)
+  sell_date?: string; // YYYY-MM
   sell_price?: number;
   sell_cost?: number;
 }
@@ -130,6 +139,13 @@ export interface Goals {
   q4: string;
 }
 
+export interface Deposit {
+  id: string;
+  name: string;
+  initial_amount: number;
+  return_rate: number;
+}
+
 export interface AppData {
   userSettings: UserSettings;
   incomes: Income[];
@@ -144,12 +160,16 @@ export interface AppData {
   realEstates: RealEstate[];
   loans: Loan[];
   goals: Goals;
+  deposits: Deposit[];
 }
 
 export interface CashFlowData {
   age: number;
   year: number;
-  balance: number;
+  balance: number;      // 総資産 (Total Assets)
+  cashBalance: number;  // 貯蓄残高 (Cash Savings Balance)
+  assetBalance: number; // 金融資産残高 (Investment Assets Balance)
+  yearlySavings: number; // 年間貯蓄額 (Annual Savings Flow)
   income: number;
   expense: number;
 }
@@ -173,4 +193,12 @@ export interface LifePlan {
   updated_at: string;
   owner_email?: string;
   permission?: 'view' | 'edit' | 'owner';
+}
+
+export interface FinancialsTabProps {
+  deposits: Deposit[];
+  onDepositAdd: (deposit: Omit<Deposit, 'id'>) => void;
+  onDepositEdit: (id: string, updates: Partial<Deposit>) => void;
+  onDelete: (id: string, type: 'deposit') => void;
+  onReorder: (id: string, type: string, direction: 'up' | 'down') => void;
 }
