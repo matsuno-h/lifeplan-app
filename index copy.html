@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ライフプランニング & キャッシュフロー表</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Noto Sans JP"', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans">
+    <div class="container mx-auto px-4 py-8">
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl font-bold text-blue-800 mb-2">
+                <i class="fa-solid fa-chart-line mr-2"></i>ライフプラン シミュレーター
+            </h1>
+            <p class="text-gray-600">あなたの未来の資産推移を可視化しましょう</p>
+            <div class="mt-4 flex justify-center space-x-4">
+                <button id="export-data" class="bg-gray-600 hover:bg-gray-700 text-white text-sm font-bold py-2 px-4 rounded transition duration-200">
+                    <i class="fa-solid fa-file-export mr-2"></i>データをファイルに保存
+                </button>
+                <label class="bg-gray-600 hover:bg-gray-700 text-white text-sm font-bold py-2 px-4 rounded transition duration-200 cursor-pointer">
+                    <i class="fa-solid fa-file-import mr-2"></i>データを読み込む
+                    <input type="file" id="import-data" accept=".json" class="hidden">
+                </label>
+                <button id="clear-data" class="bg-red-500 hover:bg-red-600 text-white text-sm font-bold py-2 px-4 rounded transition duration-200">
+                    <i class="fa-solid fa-trash-can mr-2"></i>リセット
+                </button>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- 左カラム：設定・入力エリア -->
+            <div class="lg:col-span-4 space-y-6">
+                
+                <!-- データ保存通知 -->
+                <div id="save-status" class="hidden bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative text-sm" role="alert">
+                    <span class="block sm:inline">データをブラウザに保存しました。</span>
+                </div>
+                
+                <!-- タブ切り替え -->
+                <div class="flex border-b border-gray-200 overflow-x-auto">
+                    <button id="tab-goals" onclick="switchTab('goals')" class="tab-btn px-4 py-2 text-sm font-medium focus:outline-none active-tab text-blue-600 border-b-2 border-blue-600 whitespace-nowrap">目標設定</button>
+                    <button id="tab-basic" onclick="switchTab('basic')" class="tab-btn px-4 py-2 text-sm font-medium hover:text-gray-700 focus:outline-none text-gray-500 whitespace-nowrap">基本設定</button>
+                    <button id="tab-income-expense" onclick="switchTab('income-expense')" class="tab-btn px-4 py-2 text-sm font-medium hover:text-gray-700 focus:outline-none text-gray-500 whitespace-nowrap">収支</button>
+                    <button id="tab-details" onclick="switchTab('details')" class="tab-btn px-4 py-2 text-sm font-medium hover:text-gray-700 focus:outline-none text-gray-500 whitespace-nowrap">住宅・ローン</button>
+                    <button id="tab-assets" onclick="switchTab('assets')" class="tab-btn px-4 py-2 text-sm font-medium hover:text-gray-700 focus:outline-none text-gray-500 whitespace-nowrap">資産管理</button>
+                    <button id="tab-insurance" onclick="switchTab('insurance')" class="tab-btn px-4 py-2 text-sm font-medium hover:text-gray-700 focus:outline-none text-gray-500 whitespace-nowrap">保険・年金</button>
+                    <button id="tab-advice" onclick="switchTab('advice')" class="tab-btn px-4 py-2 text-sm font-medium hover:text-gray-700 focus:outline-none text-gray-500 whitespace-nowrap">相談</button>
+                </div>
+
+                <!-- 目標設定タブ -->
+                <div id="content-goals" class="tab-content space-y-6">
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h2 class="text-xl font-bold mb-4 border-b pb-2 text-gray-700">
+                            <i class="fa-solid fa-bullseye mr-2"></i>目標設定
+                        </h2>
+                        <p class="text-sm text-gray-600 mb-6">
+                            あなたの人生の目標や理想のライフスタイルを自由に記入してください。<br>
+                            これらの情報は、より適切なアドバイスを行うために活用されます。
+                        </p>
+                        <form id="goals-form" class="space-y-6">
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Q1. 基本的なライフイベント</label>
+                                <textarea name="q1" id="goal_q1" rows="5" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-3 text-sm" placeholder="記入例
+住宅購入：3年後に4,500万円程度の戸建てを購入したい、定年時にリフォームしたい
+教育方針：中学から私立に行かせたい、大学は実家から通ってほしい
+買物予定：5年ごとに車を買い替えたい（予算300万円）、最新家電を揃えたい
+働きかた：50歳でセミリタイアしたい、妻は末子が小学校に入ったらパートに出る"></textarea>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Q2. 楽しみ・豊かさに関する目標</label>
+                                <textarea name="q2" id="goal_q2" rows="5" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-3 text-sm" placeholder="記入例
+毎年のレジャー：年に一度は家族で沖縄旅行に行きたい（予算30万円）
+記念日の過ごし方：結婚10周年、20周年には豪華な海外旅行に行きたい
+趣味：ゴルフを続けたい、年間10万円はスキルアップの資格取得に使いたい"></textarea>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Q3. 老後・将来のイメージ</label>
+                                <textarea name="q3" id="goal_q3" rows="5" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-3 text-sm" placeholder="記入例
+理想の老後生活：質素でもいいから穏やかに暮らしたい、たまに孫にお小遣いをあげたい
+何歳まで働きたいか：現役並みで60歳まで、その後は65歳まで週3で働きたい
+遺したい資産：子供に自宅を遺したい、資産は使い切って死にたい"></textarea>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Q4. 万が一への備え・優先順位</label>
+                                <textarea name="q4" id="goal_q4" rows="5" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-3 text-sm" placeholder="記入例
+最も優先したいこと：今の生活水準は落としたくない、子供の教育費だけは聖域にしたい
+不安に感じていること：今の投資ペースで老後足りるか不安、インフレに耐えられるか知りたい"></textarea>
+                            </div>
+
+                            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-200 text-sm">
+                                目標を保存
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- 基本設定タブ -->
+                <div id="content-basic" class="tab-content space-y-6 hidden">
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h2 class="text-xl font-bold mb-4 border-b pb-2 text-gray-700">
+                            <i class="fa-solid fa-user-gear mr-2"></i>基本設定
+                        </h2>
+                        <form id="settings-form" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">お名前</label>
+                                <input type="text" name="user_name" id="user_name" placeholder="例: 山田 太郎" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2 text-sm" required>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">生年月日</label>
+                                    <input type="date" name="birth_date" id="birth_date" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2 text-sm" required>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">性別</label>
+                                    <select name="gender" id="gender" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2 text-sm">
+                                        <option value="male">男性</option>
+                                        <option value="female">女性</option>
+                                        <option value="other">その他</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">障害</label>
+                                    <select name="disability" id="disability" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2 text-sm">
+                                        <option value="none">なし</option>
+                                        <option value="present">あり</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">想定寿命</label>
+                                    <div class="flex items-center">
+                                        <input type="number" name="life_expectancy" id="life_expectancy" placeholder="85" class="flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2 text-sm">
+                                        <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">歳</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="border-t pt-4 mt-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">退職年齢</label>
+                                <div class="flex items-center">
+                                    <input type="number" name="retirement_age" id="retirement_age" placeholder="65" class="flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2 text-sm" required min="0" max="100">
+                                    <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">歳</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">現在の預貯金 (現金) <span class="text-xs text-red-500 font-normal">※投資資産は含めない</span></label>
+                                <div class="flex items-center">
+                                    <input type="number" name="current_savings" id="current_savings" placeholder="300" class="flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2 text-sm" required min="0">
+                                    <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
+                                </div>
+                            </div>
+                            <!-- 
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">年間世帯収入（手取り）</label>
+                                <div class="flex items-center">
+                                    <input type="number" name="yearly_income" id="yearly_income" placeholder="400" class="flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2 text-sm" required min="0">
+                                    <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
+                                </div>
+                            </div>
+                            -->
+                            <!-- 
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">年間基本生活費 <span class="text-xs text-red-500 font-normal">※住居費は除く</span></label>
+                                <div class="flex items-center">
+                                    <input type="number" name="yearly_expenses" id="yearly_expenses" placeholder="250" class="flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2 text-sm" required min="0">
+                                    <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
+                                </div>
+                            </div>
+                            -->
+                            <!-- 
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">年間収入上昇率（見込み）</label>
+                                <div class="flex items-center">
+                                    <input type="number" name="income_growth_rate" id="income_growth_rate" placeholder="1.0" class="flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2 text-sm" step="0.1" required min="0">
+                                    <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">%</span>
+                                </div>
+                            </div>
+                            -->
+                            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-200 text-sm">
+                                設定を保存して計算
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- 家族情報 -->
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h2 class="text-xl font-bold mb-4 border-b pb-2 text-gray-700">
+                            <i class="fa-solid fa-people-roof mr-2"></i>家族情報
+                        </h2>
+                        <form id="family-form" class="space-y-3 mb-4">
+                            <div class="space-y-3">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">名前</label>
+                                        <input type="text" name="family_name" placeholder="例: 花子" class="w-full rounded-md border-gray-300 border p-2 text-sm" required>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">続柄</label>
+                                        <select name="family_relation" class="w-full rounded-md border-gray-300 border p-2 text-sm">
+                                            <option value="spouse">配偶者</option>
+                                            <option value="child">子</option>
+                                            <option value="parent">親</option>
+                                            <option value="other">その他</option>
+                                        </select>
+                                    </div>
+                                    <p class="col-span-2 text-xs text-gray-500">※本人の情報は「基本設定」で入力してください。</p>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">生年月日</label>
+                                        <input type="date" name="family_birth_date" class="w-full rounded-md border-gray-300 border p-2 text-sm" required>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">性別</label>
+                                        <select name="family_gender" class="w-full rounded-md border-gray-300 border p-2 text-sm">
+                                            <option value="male">男性</option>
+                                            <option value="female">女性</option>
+                                            <option value="other">その他</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">障害</label>
+                                        <select name="family_disability" class="w-full rounded-md border-gray-300 border p-2 text-sm">
+                                            <option value="none">なし</option>
+                                            <option value="present">あり</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">想定寿命</label>
+                                        <div class="flex items-center">
+                                            <input type="number" name="family_life_expectancy" placeholder="90" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm">
+                                            <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">歳</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1.5 rounded text-sm mt-2">追加</button>
+                        </form>
+                        <ul id="family-list" class="divide-y divide-gray-200 text-sm border rounded max-h-32 overflow-y-auto"></ul>
+                    </div>
+
+                </div>
+
+                <!-- 詳細情報タブ -->
+                <div id="content-income-expense" class="tab-content space-y-6 hidden">
+                    <!-- 収入情報 (新規追加) -->
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h2 class="text-xl font-bold mb-4 border-b pb-2 text-gray-700">
+                            <i class="fa-solid fa-briefcase mr-2"></i>収入源
+                        </h2>
+                        <form id="income-form" class="space-y-3 mb-4">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">名称 (何の仕事)</label>
+                                    <input type="text" name="income_name" placeholder="例: 給与収入" class="w-full rounded-md border-gray-300 border p-2 text-sm" required>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">収入額 (年額・手取り)</label>
+                                    <div class="flex items-center">
+                                        <input type="number" name="income_amount" placeholder="400" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm" required>
+                                        <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">期間 (開始年齢〜終了年齢)</label>
+                                    <div class="flex items-center space-x-2">
+                                        <input type="number" name="income_start_age" placeholder="30" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm" required>
+                                        <span class="text-gray-500">〜</span>
+                                        <input type="number" name="income_end_age" placeholder="65" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm" required>
+                                        <span class="text-gray-500 text-sm whitespace-nowrap">歳</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">変動率 (昇給など)</label>
+                                    <div class="flex items-center">
+                                        <input type="number" name="income_growth_rate" placeholder="1.0" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm" step="0.1" value="0">
+                                        <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">%</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1.5 rounded text-sm mt-1">追加</button>
+                        </form>
+                        <ul id="income-list" class="divide-y divide-gray-200 text-sm border rounded max-h-32 overflow-y-auto"></ul>
+                    </div>
+
+                    <!-- 基本生活費 (新規追加) -->
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h2 class="text-xl font-bold mb-4 border-b pb-2 text-gray-700">
+                            <i class="fa-solid fa-cart-shopping mr-2"></i>基本生活費
+                        </h2>
+                        <form id="expense-form" class="space-y-3 mb-4">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">項目名</label>
+                                    <input type="text" name="expense_name" placeholder="例: 基本生活費" class="w-full rounded-md border-gray-300 border p-2 text-sm" required>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">金額 (年額)</label>
+                                    <div class="flex items-center">
+                                        <input type="number" name="expense_amount" placeholder="250" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm" required>
+                                        <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">期間 (開始年齢〜終了年齢)</label>
+                                    <div class="flex items-center space-x-2">
+                                        <input type="number" name="expense_start_age" placeholder="30" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm" required>
+                                        <span class="text-gray-500">〜</span>
+                                        <input type="number" name="expense_end_age" placeholder="95" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm" required>
+                                        <span class="text-gray-500 text-sm whitespace-nowrap">歳</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">物価上昇率</label>
+                                    <div class="flex items-center">
+                                        <input type="number" name="expense_inflation_rate" placeholder="0.0" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm" step="0.1" value="0">
+                                        <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">%</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="text-xs text-red-500 mt-1 mb-2">※ 住居費、教育費、保険料はここには含めず、それぞれの項目で入力してください。</p>
+                            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1.5 rounded text-sm mt-1">追加</button>
+                        </form>
+                        <ul id="expense-list" class="divide-y divide-gray-200 text-sm border rounded max-h-32 overflow-y-auto"></ul>
+                    </div>
+
+                    <!-- 教育資金 -->
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h2 class="text-xl font-bold mb-4 border-b pb-2 text-gray-700">
+                            <i class="fa-solid fa-graduation-cap mr-2"></i>教育資金
+                        </h2>
+                        <form id="education-form" class="space-y-3 mb-4">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">対象者</label>
+                                    <select name="education_owner_id" id="education_owner_id" class="w-full rounded-md border-gray-300 border p-2 text-sm">
+                                        <!-- JSで生成 -->
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">項目名</label>
+                                    <input type="text" name="education_name" placeholder="例: 大学費用" class="w-full rounded-md border-gray-300 border p-2 text-sm" required>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">期間 (開始年齢〜終了年齢)</label>
+                                    <div class="flex items-center space-x-2">
+                                        <input type="number" name="education_start_age" placeholder="18" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm" required>
+                                        <span class="text-gray-500">〜</span>
+                                        <input type="number" name="education_end_age" placeholder="22" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm" required>
+                                        <span class="text-gray-500 text-sm whitespace-nowrap">歳</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">費用 (年額)</label>
+                                    <div class="flex items-center">
+                                        <input type="number" name="education_amount" placeholder="100" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm" required>
+                                        <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1.5 rounded text-sm mt-1">追加</button>
+                        </form>
+                        <ul id="education-list" class="divide-y divide-gray-200 text-sm border rounded max-h-32 overflow-y-auto"></ul>
+                    </div>
+
+                    <!-- ライフイベント入力 -->
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h2 class="text-xl font-bold mb-4 border-b pb-2 text-gray-700">
+                            <i class="fa-solid fa-calendar-plus mr-2"></i>ライフイベント
+                        </h2>
+                        <form id="event-form" class="space-y-4 mb-6">
+                            <input type="hidden" name="edit_id">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">イベント名</label>
+                                    <input type="text" name="event_name" id="event_name" placeholder="例: 住宅購入" class="w-full rounded-md border-gray-300 border p-2 text-sm" required>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">発生年齢</label>
+                                    <div class="flex items-center">
+                                        <input type="number" name="event_age" id="event_age" placeholder="35" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm" required>
+                                        <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">歳</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">費用</label>
+                                <div class="flex items-center">
+                                    <input type="number" name="event_cost" id="event_cost" placeholder="3000" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm" required>
+                                    <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">※ 臨時収入の場合はマイナスの値を入力してください</p>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button type="submit" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition duration-200 text-sm">
+                                    イベントを保存
+                                </button>
+                                <button type="button" onclick="cancelEdit('event-form')" class="hidden bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded transition duration-200 text-sm cancel-btn">
+                                    中止
+                                </button>
+                            </div>
+                        </form>
+
+                        <!-- イベントリスト -->
+                        <div class="mt-4">
+                            <h3 class="font-bold text-sm text-gray-600 mb-2">登録済みイベント</h3>
+                            <div class="overflow-y-auto max-h-40 border rounded">
+                                <ul id="event-list" class="divide-y divide-gray-200">
+                                    <li class="p-3 text-center text-gray-500 text-sm">イベントはまだありません</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="content-details" class="tab-content space-y-6 hidden">
+
+                    <!-- 住宅情報 -->
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h2 class="text-xl font-bold mb-4 border-b pb-2 text-gray-700">
+                            <i class="fa-solid fa-house-chimney mr-2"></i>住宅情報
+                        </h2>
+                        <form id="housing-form" class="space-y-4 mb-4">
+                            <!-- 共通項目 -->
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">名称</label>
+                                    <input type="text" name="housing_name" placeholder="例: マイホーム" class="w-full rounded-md border-gray-300 border p-2 text-sm" required>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">住居タイプ</label>
+                                    <div class="flex items-center space-x-4 h-[38px]">
+                                        <label class="inline-flex items-center cursor-pointer">
+                                            <input type="radio" name="housing_type" value="rental" checked class="form-radio text-indigo-600" onchange="toggleHousingForm()">
+                                            <span class="ml-2 text-sm text-gray-700">賃貸</span>
+                                        </label>
+                                        <label class="inline-flex items-center cursor-pointer">
+                                            <input type="radio" name="housing_type" value="owned" class="form-radio text-indigo-600" onchange="toggleHousingForm()">
+                                            <span class="ml-2 text-sm text-gray-700">持ち家</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">居住開始年齢</label>
+                                    <div class="flex items-center">
+                                        <input type="number" name="housing_start_age" placeholder="30" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm" required>
+                                        <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">歳から</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">居住終了年齢</label>
+                                    <div class="flex items-center">
+                                        <input type="number" name="housing_end_age" placeholder="95" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm">
+                                        <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">歳まで</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 賃貸用項目 -->
+                            <div id="housing-rental-fields" class="space-y-3 p-3 bg-gray-50 rounded-md">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">家賃 (月額)</label>
+                                        <div class="flex items-center">
+                                            <input type="number" name="rental_rent" placeholder="10" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm">
+                                            <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">敷金</label>
+                                        <div class="flex items-center">
+                                            <input type="number" name="rental_initial" placeholder="30" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm">
+                                            <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">更新料</label>
+                                        <div class="flex items-center">
+                                            <input type="number" name="rental_renewal_cost" placeholder="10" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm">
+                                            <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">更新間隔</label>
+                                        <div class="flex items-center">
+                                            <input type="number" name="rental_interval" placeholder="2" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm" value="2">
+                                            <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">年ごと</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 持ち家用項目 -->
+                            <div id="housing-owned-fields" class="hidden space-y-3 p-3 bg-gray-50 rounded-md">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">管理費・修繕積立金 (月額)</label>
+                                        <div class="flex items-center">
+                                            <input type="number" name="owned_maintenance" placeholder="3" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm">
+                                            <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">固定資産税 (年額)</label>
+                                        <div class="flex items-center">
+                                            <input type="number" name="owned_tax" placeholder="15" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm">
+                                            <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">ローン残高</label>
+                                        <div class="flex items-center">
+                                            <input type="number" name="owned_loan_balance" placeholder="3000" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm">
+                                            <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">ローン返済 (月額)</label>
+                                        <div class="flex items-center">
+                                            <input type="number" name="owned_loan_monthly" placeholder="10" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm">
+                                            <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">完済予定年齢</label>
+                                        <div class="flex items-center">
+                                            <input type="number" name="owned_loan_end_age" placeholder="65" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm">
+                                            <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">歳</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="text-xs text-gray-500">※詳細なローン計算は「ローン」項目をご利用ください。ここでは簡易的な支出として計算されます。</p>
+                            </div>
+
+                            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1.5 rounded text-sm">追加</button>
+                        </form>
+                        <ul id="housing-list" class="divide-y divide-gray-200 text-sm border rounded max-h-40 overflow-y-auto"></ul>
+                    </div>
+                    
+                    <!-- ローン -->
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h2 class="text-xl font-bold mb-4 border-b pb-2 text-gray-700">
+                            <i class="fa-solid fa-money-bill-transfer mr-2"></i>ローン
+                        </h2>
+                        <form id="loan-form" class="space-y-3 mb-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">ローン名</label>
+                                <input type="text" name="loan_name" placeholder="例: マイカーローン" class="w-full rounded-md border-gray-300 border p-2 text-sm" required>
+                            </div>
+                            <div class="grid grid-cols-3 gap-4">
+                                <div class="col-span-1">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">残高</label>
+                                    <div class="flex items-center">
+                                        <input type="number" name="loan_balance" placeholder="200" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm" required>
+                                        <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
+                                    </div>
+                                </div>
+                                <div class="col-span-1">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">月返済額</label>
+                                    <div class="flex items-center">
+                                        <input type="number" name="loan_monthly" placeholder="3" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm" step="0.1" required>
+                                        <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
+                                    </div>
+                                </div>
+                                <div class="col-span-1">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">残り回数</label>
+                                    <div class="flex items-center">
+                                        <input type="number" name="loan_remaining" placeholder="60" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm" required>
+                                        <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">回</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1.5 rounded text-sm mt-1">追加</button>
+                        </form>
+                        <ul id="loan-list" class="divide-y divide-gray-200 text-sm border rounded max-h-32 overflow-y-auto"></ul>
+                    </div>
+
+                </div>
+
+                <!-- 資産管理タブ -->
+                <div id="content-assets" class="tab-content space-y-6 hidden">
+                    
+                    <!-- 金融資産 -->
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h2 class="text-xl font-bold mb-4 border-b pb-2 text-gray-700">
+                            <i class="fa-solid fa-coins mr-2"></i>金融資産
+                        </h2>
+                        <form id="asset-form" class="space-y-3 mb-4">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">資産名</label>
+                                    <input type="text" name="asset_name" placeholder="例: 全米株式" class="w-full rounded-md border-gray-300 border p-2 text-sm" required>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">種類</label>
+                                    <select name="asset_type" class="w-full rounded-md border-gray-300 border p-2 text-sm">
+                                        <option value="deposit">預金</option>
+                                        <option value="time_deposit">定期預金</option>
+                                        <option value="mutual_fund">投資信託</option>
+                                        <option value="nisa">NISA</option>
+                                        <option value="crypto">仮想通貨</option>
+                                        <option value="bond">国債</option>
+                                        <option value="stock">株式</option>
+                                        <option value="other">その他</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">現在の評価額</label>
+                                    <div class="flex items-center">
+                                        <input type="number" name="asset_amount" placeholder="100" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm" required>
+                                        <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">年利回り</label>
+                                    <div class="flex items-center">
+                                        <input type="number" name="asset_return" placeholder="5" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm" step="0.1" value="0">
+                                        <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">%</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">積立額 (年額)</label>
+                                    <div class="flex items-center">
+                                        <input type="number" name="asset_yearly" placeholder="60" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm" min="0">
+                                        <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">積立終了年齢</label>
+                                    <div class="flex items-center">
+                                        <input type="number" name="asset_end_age" placeholder="65" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm">
+                                        <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">歳まで</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="p-3 bg-gray-50 rounded space-y-3">
+                                <p class="text-xs font-bold text-gray-500">取り崩し設定 (任意)</p>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">開始年齢</label>
+                                        <div class="flex items-center">
+                                            <input type="number" name="asset_withdrawal_age" placeholder="65" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm">
+                                            <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">歳から</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">取り崩し額 (年額)</label>
+                                        <div class="flex items-center">
+                                            <input type="number" name="asset_withdrawal_amount" placeholder="100" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm">
+                                            <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1.5 rounded text-sm mt-1">追加</button>
+                        </form>
+                        <ul id="asset-list" class="divide-y divide-gray-200 text-sm border rounded max-h-32 overflow-y-auto"></ul>
+                    </div>
+
+                    <!-- 不動産 -->
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h2 class="text-xl font-bold mb-4 border-b pb-2 text-gray-700">
+                            <i class="fa-solid fa-house mr-2"></i>不動産
+                        </h2>
+                        <form id="realestate-form" class="space-y-3 mb-4">
+                            <input type="hidden" name="edit_id">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">物件名</label>
+                                    <input type="text" name="re_name" placeholder="例: 区分マンションA" class="w-full rounded-md border-gray-300 border p-2 text-sm" required>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">購入年月</label>
+                                    <input type="text" name="re_purchase_date" placeholder="例: 2025-01" class="w-full rounded-md border-gray-300 border p-2 text-sm" onfocus="(this.type='month')" onblur="(this.type='text')">
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">購入価格</label>
+                                    <div class="flex items-center">
+                                        <input type="number" name="re_price" placeholder="2000" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm">
+                                        <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">初期費用</label>
+                                    <div class="flex items-center">
+                                        <input type="number" name="re_initial_cost" placeholder="100" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm">
+                                        <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="p-3 bg-gray-50 rounded space-y-3">
+                                <p class="text-xs font-bold text-gray-500">ローン設定</p>
+                                <div class="grid grid-cols-3 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">借入額</label>
+                                        <div class="flex items-center">
+                                            <input type="number" name="re_loan_amount" placeholder="1800" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm">
+                                            <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">金利</label>
+                                        <div class="flex items-center">
+                                            <input type="number" name="re_loan_rate" placeholder="2.5" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm" step="0.01">
+                                            <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">%</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">返済回数</label>
+                                        <div class="flex items-center">
+                                            <input type="number" name="re_loan_payments" placeholder="420" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm">
+                                            <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">回</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="p-3 bg-gray-50 rounded space-y-3">
+                                <p class="text-xs font-bold text-gray-500">運用収支・税金</p>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">家賃収入 (月額)</label>
+                                        <div class="flex items-center">
+                                            <input type="number" name="re_rent_income" placeholder="8" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm">
+                                            <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">維持管理費 (月額)</label>
+                                        <div class="flex items-center">
+                                            <input type="number" name="re_maintenance_cost" placeholder="2" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm">
+                                            <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">固定資産税 (年額)</label>
+                                    <div class="flex items-center">
+                                        <input type="number" name="re_tax" placeholder="10" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm">
+                                        <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="p-3 bg-gray-50 rounded space-y-3">
+                                <p class="text-xs font-bold text-gray-500">売却設定 (任意)</p>
+                                <div class="grid grid-cols-3 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">売却年月</label>
+                                        <input type="text" name="re_sell_date" placeholder="例: 2035-01" class="w-full rounded-md border-gray-300 border p-2 text-sm" onfocus="(this.type='month')" onblur="(this.type='text')">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">売却価格</label>
+                                        <div class="flex items-center">
+                                            <input type="number" name="re_sell_price" placeholder="1800" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm">
+                                            <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">売却諸経費</label>
+                                        <div class="flex items-center">
+                                            <input type="number" name="re_sell_cost" placeholder="60" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm">
+                                            <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex space-x-2">
+                                <button type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1.5 rounded text-sm">保存</button>
+                                <button type="button" onclick="cancelEdit('realestate-form')" class="hidden bg-gray-400 hover:bg-gray-500 text-white font-bold py-1.5 rounded text-sm w-20 cancel-btn">中止</button>
+                            </div>
+                        </form>
+                        <ul id="realestate-list" class="divide-y divide-gray-200 text-sm border rounded max-h-32 overflow-y-auto"></ul>
+                    </div>
+
+                </div>
+
+                <!-- 保険・年金タブ -->
+                <div id="content-insurance" class="tab-content space-y-6 hidden">
+                    <!-- 保険 -->
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h2 class="text-xl font-bold mb-4 border-b pb-2 text-gray-700">
+                            <i class="fa-solid fa-file-shield mr-2"></i>保険
+                        </h2>
+                        <form id="insurance-form" class="space-y-3 mb-4">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">保険会社名</label>
+                                    <input type="text" name="ins_company" placeholder="例: 〇〇生命" class="w-full rounded-md border-gray-300 border p-2 text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">商品名</label>
+                                    <input type="text" name="ins_name" placeholder="例: 医療保険" class="w-full rounded-md border-gray-300 border p-2 text-sm" required>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">契約期間</label>
+                                    <div class="flex items-center">
+                                        <input type="number" name="ins_period" placeholder="10" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm" required>
+                                        <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">年</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">保険料 (年額)</label>
+                                    <div class="flex items-center">
+                                        <input type="number" name="ins_premium" placeholder="5" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm" required>
+                                        <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">解約・満期年齢</label>
+                                    <div class="flex items-center">
+                                        <input type="number" name="ins_surrender_age" placeholder="65" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm">
+                                        <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">歳</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">受取額</label>
+                                    <div class="flex items-center">
+                                        <input type="number" name="ins_surrender_amount" placeholder="100" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm">
+                                        <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1.5 rounded text-sm mt-1">追加</button>
+                        </form>
+                        <ul id="insurance-list" class="divide-y divide-gray-200 text-sm border rounded max-h-32 overflow-y-auto"></ul>
+                    </div>
+                    
+                    <!-- 年金 -->
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h2 class="text-xl font-bold mb-4 border-b pb-2 text-gray-700">
+                            <i class="fa-solid fa-piggy-bank mr-2"></i>年金
+                        </h2>
+                        <form id="pension-form" class="space-y-3 mb-4">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">受給者</label>
+                                    <select name="pension_owner_id" id="pension_owner_id" class="w-full rounded-md border-gray-300 border p-2 text-sm">
+                                        <!-- JSで生成 -->
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">年金名</label>
+                                    <input type="text" name="pension_name" placeholder="例: 公的年金" class="w-full rounded-md border-gray-300 border p-2 text-sm" required>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">受給開始年齢</label>
+                                    <div class="flex items-center">
+                                        <input type="number" name="pension_start_age" placeholder="65" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm" required>
+                                        <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">歳から</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">受給額 (年額)</label>
+                                    <div class="flex items-center">
+                                        <input type="number" name="pension_amount" placeholder="100" class="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm" required>
+                                        <span class="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1.5 rounded text-sm mt-1">追加</button>
+                        </form>
+                        <ul id="pension-list" class="divide-y divide-gray-200 text-sm border rounded max-h-32 overflow-y-auto"></ul>
+                    </div>
+                </div>
+
+                <!-- アドバイス (新規追加) -->
+                <div id="content-advice" class="tab-content space-y-6 hidden">
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h2 class="text-xl font-bold mb-4 border-b pb-2 text-gray-700">
+                            <i class="fa-solid fa-robot mr-2"></i>AIのアドバイス
+                        </h2>
+                        <div class="space-y-4">
+                            <p class="text-sm text-gray-600">
+                                あなたの入力したライフプランデータを分析し、AIの視点からアドバイスを行います。<br>
+                                資産の推移、リスク、改善点などを診断します。<br><br>
+                                より具体的で詳細なシミュレーションをご希望の場合は、ファイナンシャルプランナーへの個別相談をお勧めいたします。
+                            </p>
+                            
+                            <div class="flex justify-center py-4">
+                                <button id="generate-advice-btn" class="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold py-3 px-8 rounded-full shadow-lg transform transition hover:-translate-y-1 duration-200 flex items-center">
+                                    <i class="fa-solid fa-robot mr-2"></i>
+                                    AIに相談
+                                </button>
+                            </div>
+
+                            <!-- 診断結果表示エリア -->
+                            <div id="advice-loading" class="hidden text-center py-8">
+                                <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent"></div>
+                                <p class="mt-2 text-blue-600 font-medium">AIがライフプランを分析中...</p>
+                            </div>
+
+                            <div id="advice-result" class="hidden mt-6 bg-blue-50 border border-blue-100 rounded-xl p-6 relative">
+                                <div class="absolute -top-3 left-6 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full">
+                                    診断レポート
+                                </div>
+                                <div id="advice-text" class="prose prose-sm max-w-none text-gray-700 leading-relaxed space-y-4">
+                                    <!-- JSでテキスト挿入 -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 資産管理タブ (削除済み要素のプレースホルダー除去) -->
+            </div>
+
+            <!-- 右カラム：結果表示エリア -->
+            <div class="lg:col-span-8 space-y-6">
+                <!-- グラフ -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-xl font-bold mb-4 text-gray-700">
+                        <i class="fa-solid fa-chart-area mr-2"></i>資産推移シミュレーション
+                    </h2>
+                    <div class="relative" style="height: 400px; width: 100%;">
+                        <canvas id="assetChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- キャッシュフロー表 -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-xl font-bold mb-4 text-gray-700 flex justify-between items-center">
+                        <span><i class="fa-solid fa-table mr-2"></i>キャッシュフロー表</span>
+                        <button id="download-csv" class="text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 py-1 px-3 rounded">
+                            <i class="fa-solid fa-download mr-1"></i>CSV保存
+                        </button>
+                    </h2>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 text-sm">
+                            <thead class="bg-gray-100 sticky top-0 z-10">
+                                <tr id="cashflow-header-row">
+                                    <!-- ヘッダーはJSで生成 -->
+                                </tr>
+                            </thead>
+                            <tbody id="cashflow-body" class="divide-y divide-gray-200">
+                                <!-- データはJSで生成 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- ローン返済残高一覧表 -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-xl font-bold mb-4 text-gray-700">
+                        <i class="fa-solid fa-file-invoice-dollar mr-2"></i>ローン返済残高一覧
+                    </h2>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 text-sm">
+                            <thead class="bg-gray-100 sticky top-0 z-10">
+                                <tr id="loan-balance-header-row">
+                                    <!-- ヘッダーはJSで生成 -->
+                                </tr>
+                            </thead>
+                            <tbody id="loan-balance-body" class="divide-y divide-gray-200">
+                                <!-- データはJSで生成 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer class="mt-12 text-center text-gray-500 text-sm pb-8">
+            <p>
+                <a href="https://manapla.net/" target="_blank" rel="noopener noreferrer" class="hover:text-gray-700 transition-colors">
+                    &copy; まなぷら. All rights reserved.
+                </a>
+            </p>
+        </footer>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
