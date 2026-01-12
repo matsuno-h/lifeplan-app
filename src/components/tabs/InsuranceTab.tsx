@@ -14,12 +14,6 @@ interface InsuranceTabProps {
   onReorder: (id: string, type: string, direction: 'up' | 'down') => void;
 }
 
-// Helper to safely parse formatted string input
-const parseFormattedInput = (value: string | null): number => {
-  if (!value) return 0;
-  return parseInt(value.replace(/,/g, '') || '0');
-};
-
 export function InsuranceTab({
   insurances,
   pensions,
@@ -34,30 +28,17 @@ export function InsuranceTab({
   const [editingInsuranceId, setEditingInsuranceId] = useState<string | null>(null);
   const [editingPensionId, setEditingPensionId] = useState<string | null>(null);
 
-  // Calculate current age of the main user for default values
-  const selfMember = familyMembers.find(m => m.relation === 'self');
-  const currentYear = new Date().getFullYear();
-  const currentAge = selfMember ? (currentYear - selfMember.birth_year) : 30;
-
   const handleInsuranceSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    const period = parseFormattedInput(formData.get('ins_period') as string);
-    const startAge = parseFormattedInput(formData.get('ins_start_age') as string);
-    
-    // Calculate end_age based on start_age and period.
-    // If period is 10 years, and start is 30, we want it to cover 30,31,...,39 (10 years).
-    // So end_age should be 30 + 10 - 1 = 39.
-    // CashFlowTable uses inclusive comparison (age <= end_age).
-    const endAge = startAge + period - 1;
-
+    const period = parseInt(formData.get('ins_period') as string);
     const insurance = {
       name: formData.get('ins_name') as string,
       type: formData.get('ins_company') as string || 'general',
-      premium: parseFormattedInput(formData.get('ins_premium') as string),
-      start_age: startAge,
-      end_age: endAge,
-      coverage: parseFormattedInput(formData.get('ins_surrender_amount') as string) || undefined,
+      premium: parseInt(formData.get('ins_premium') as string),
+      start_age: 30,
+      end_age: 30 + period,
+      coverage: parseInt(formData.get('ins_surrender_amount') as string) || undefined,
     };
 
     if (editingInsuranceId) {
@@ -67,10 +48,6 @@ export function InsuranceTab({
       onInsuranceAdd(insurance);
     }
     e.currentTarget.reset();
-    
-    // Reset start age to current age after submit
-    const startAgeInput = (document.getElementById('insurance-form') as HTMLFormElement)?.elements.namedItem('ins_start_age') as HTMLInputElement;
-    if (startAgeInput) startAgeInput.value = currentAge.toString();
   };
 
   const handleEditInsurance = (insurance: Insurance) => {
@@ -79,13 +56,9 @@ export function InsuranceTab({
     if (form) {
       (form.elements.namedItem('ins_company') as HTMLInputElement).value = insurance.type;
       (form.elements.namedItem('ins_name') as HTMLInputElement).value = insurance.name;
-      (form.elements.namedItem('ins_start_age') as HTMLInputElement).value = insurance.start_age.toString();
-      // Calculate period from start and end age
-      // end_age = start_age + period - 1  =>  period = end_age - start_age + 1
-      const period = insurance.end_age - insurance.start_age + 1;
-      (form.elements.namedItem('ins_period') as HTMLInputElement).value = period.toString();
-      (form.elements.namedItem('ins_premium') as HTMLInputElement).value = insurance.premium.toLocaleString();
-      (form.elements.namedItem('ins_surrender_amount') as HTMLInputElement).value = insurance.coverage?.toLocaleString() || '';
+      (form.elements.namedItem('ins_period') as HTMLInputElement).value = (insurance.end_age - insurance.start_age).toString();
+      (form.elements.namedItem('ins_premium') as HTMLInputElement).value = insurance.premium.toString();
+      (form.elements.namedItem('ins_surrender_amount') as HTMLInputElement).value = insurance.coverage?.toString() || '';
     }
   };
 
@@ -94,8 +67,8 @@ export function InsuranceTab({
     const formData = new FormData(e.currentTarget);
     const pension = {
       name: formData.get('pension_name') as string,
-      start_age: parseFormattedInput(formData.get('pension_start_age') as string),
-      amount: parseFormattedInput(formData.get('pension_amount') as string),
+      start_age: parseInt(formData.get('pension_start_age') as string),
+      amount: parseInt(formData.get('pension_amount') as string),
     };
 
     if (editingPensionId) {
@@ -113,7 +86,7 @@ export function InsuranceTab({
     if (form) {
       (form.elements.namedItem('pension_name') as HTMLInputElement).value = pension.name;
       (form.elements.namedItem('pension_start_age') as HTMLInputElement).value = pension.start_age.toString();
-      (form.elements.namedItem('pension_amount') as HTMLInputElement).value = pension.amount.toLocaleString();
+      (form.elements.namedItem('pension_amount') as HTMLInputElement).value = pension.amount.toString();
     }
   };
 
@@ -148,19 +121,6 @@ export function InsuranceTab({
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">加入年齢</label>
-              <div className="flex items-center">
-                <input
-                  type="number"
-                  name="ins_start_age"
-                  defaultValue={currentAge}
-                  className="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm"
-                  required
-                />
-                <span className="ml-2 text-gray-500 text-sm whitespace-nowrap">歳</span>
-              </div>
-            </div>
-            <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">契約期間</label>
               <div className="flex items-center">
                 <input
@@ -173,13 +133,11 @@ export function InsuranceTab({
                 <span className="ml-2 text-gray-500 text-sm whitespace-nowrap">年</span>
               </div>
             </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">保険料 (年額)</label>
               <div className="flex items-center">
                 <input
-                  type="text"
+                  type="number"
                   name="ins_premium"
                   placeholder="5"
                   className="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm"
@@ -188,11 +146,25 @@ export function InsuranceTab({
                 <span className="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
               </div>
             </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">満期・解約時受取額</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">解約・満期年齢</label>
               <div className="flex items-center">
                 <input
-                  type="text"
+                  type="number"
+                  name="ins_surrender_age"
+                  placeholder="65"
+                  className="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm"
+                />
+                <span className="ml-2 text-gray-500 text-sm whitespace-nowrap">歳</span>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">受取額</label>
+              <div className="flex items-center">
+                <input
+                  type="number"
                   name="ins_surrender_amount"
                   placeholder="100"
                   className="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm"
@@ -213,11 +185,7 @@ export function InsuranceTab({
                 type="button"
                 onClick={() => {
                   setEditingInsuranceId(null);
-                  const form = document.getElementById('insurance-form') as HTMLFormElement;
-                  form?.reset();
-                  // Reset start age to current age
-                  const startAgeInput = form?.elements.namedItem('ins_start_age') as HTMLInputElement;
-                  if (startAgeInput) startAgeInput.value = currentAge.toString();
+                  (document.getElementById('insurance-form') as HTMLFormElement)?.reset();
                 }}
                 className="flex-1 bg-gray-400 hover:bg-gray-500 text-white font-bold py-1.5 rounded text-sm mt-1"
               >
@@ -238,12 +206,10 @@ export function InsuranceTab({
                       <span className="text-gray-500 mr-1">{insurance.type}</span>
                     )}
                     <span className="font-medium">{insurance.name}</span>
-                    <span className="text-gray-600 ml-2">
-                      {insurance.start_age}歳〜{insurance.end_age}歳
-                    </span>
-                    <span className="text-gray-600 ml-2">年{(insurance.premium ?? 0).toLocaleString()}万円</span>
-                    {insurance.coverage != null && (
-                      <span className="text-gray-500 ml-2">受取{(insurance.coverage ?? 0).toLocaleString()}万円</span>
+                    <span className="text-gray-600 ml-2">年{insurance.premium}万円</span>
+                    <span className="text-gray-500 ml-2">{insurance.end_age - insurance.start_age}年契約</span>
+                    {insurance.coverage && (
+                      <span className="text-gray-500 ml-2">受取{insurance.coverage}万円</span>
                     )}
                   </div>
                   <div className="flex items-center gap-1">
@@ -333,7 +299,7 @@ export function InsuranceTab({
               <label className="block text-sm font-medium text-gray-700 mb-1">受給額 (年額)</label>
               <div className="flex items-center">
                 <input
-                  type="text"
+                  type="number"
                   name="pension_amount"
                   placeholder="100"
                   className="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm"
@@ -374,7 +340,7 @@ export function InsuranceTab({
                   <div>
                     <span className="font-medium">{pension.name}</span>
                     <span className="text-gray-500 ml-2">{pension.start_age}歳から</span>
-                    <span className="text-gray-600 ml-2">年{(pension.amount ?? 0).toLocaleString()}万円</span>
+                    <span className="text-gray-600 ml-2">年{pension.amount}万円</span>
                   </div>
                   <div className="flex items-center gap-1">
                     {index > 0 && (

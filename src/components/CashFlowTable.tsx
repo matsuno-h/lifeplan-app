@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { ChevronRight, ChevronDown, Download } from 'lucide-react';
 import { CashFlowData, AppData } from '../types';
-import { calculatePMT } from '../utils/simulator';
 
 interface CashFlowTableProps {
   data: CashFlowData[];
@@ -20,30 +19,15 @@ interface RowData {
   educationDetails: { [name: string]: number };
   housingCost: number;
   housingDetails: { [name: string]: number };
-  realEstateCost: number;
-  realEstateDetails: { [name: string]: number };
   insuranceCost: number;
   insuranceDetails: { [name: string]: number };
-  loanRepayment: number;
-  loanDetails: { [name: string]: number };
-  investmentContribution: number;
-  investmentDetails: { [name: string]: number };
-  investmentWithdrawal: number;
   eventCost: number;
   eventNames: string;
   balance: number;
   cashBalance: number;
   investmentBalance: number;
   savings: number;
-  // New: Loan Balances
-  loanBalances: { [name: string]: number };
-  totalLoanBalance: number;
 }
-
-const safeNum = (val: number | undefined | null): number => {
-  const num = val ?? 0;
-  return (isNaN(num) || !isFinite(num)) ? 0 : num;
-};
 
 export function CashFlowTable({ data, appData }: CashFlowTableProps) {
   const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({});
@@ -66,7 +50,7 @@ export function CashFlowTable({ data, appData }: CashFlowTableProps) {
 
   const calculateDetailedData = (): RowData[] => {
     const results: RowData[] = [];
-    const endAge = appData.userSettings.retirement_age || 100;
+    const endAge = appData.userSettings.life_expectancy || 85;
     let cashBalance = appData.userSettings.current_savings || 0;
 
     const assetBalances: { [key: string]: number } = {};
@@ -90,7 +74,6 @@ export function CashFlowTable({ data, appData }: CashFlowTableProps) {
       let totalIncome = 0;
       const incomeDetails: { [name: string]: number } = {};
 
-      // 1. Regular Incomes
       appData.incomes.forEach((income) => {
         if (age >= income.start_age && age <= income.end_age) {
           const yearsFromStart = age - income.start_age;
@@ -100,7 +83,6 @@ export function CashFlowTable({ data, appData }: CashFlowTableProps) {
         }
       });
 
-      // 2. Pensions
       appData.pensions.forEach((pension) => {
         if (age >= pension.start_age) {
           incomeDetails[pension.name] = pension.amount;
@@ -136,78 +118,30 @@ export function CashFlowTable({ data, appData }: CashFlowTableProps) {
       });
 
       let housingCost = 0;
-      let loanRepayment = 0;
       const housingDetails: { [name: string]: number } = {};
-      const loanDetails: { [name: string]: number } = {};
-      const loanBalances: { [name: string]: number } = {};
 
-      // Housing (Rental & Owned)
       appData.housings.forEach((housing) => {
-        // Expense Calculation
         if (age >= housing.start_age && (!housing.end_age || age <= housing.end_age)) {
+          let cost = 0;
           if (housing.type === 'rental' && housing.rent) {
-            const cost = housing.rent * 12;
-            housingDetails[housing.name] = Math.round(cost);
-            housingCost += cost;
-            
+            cost = housing.rent * 12;
             if (housing.renewal_cost && housing.interval) {
               const yearsFromStart = age - housing.start_age;
               if (yearsFromStart > 0 && yearsFromStart % housing.interval === 0) {
-                housingDetails[`${housing.name} (更新料)`] = housing.renewal_cost;
-                housingCost += housing.renewal_cost;
+                cost += housing.renewal_cost;
               }
             }
           } else if (housing.type === 'owned') {
             if (housing.loan_monthly && housing.loan_end_age && age <= housing.loan_end_age) {
-              const loanAmount = housing.loan_monthly * 12;
-              loanDetails[housing.name] = Math.round(loanAmount);
-              loanRepayment += loanAmount;
+              cost += housing.loan_monthly * 12;
             }
-            if (housing.maintenance) {
-              const mCost = housing.maintenance * 12;
-              housingDetails[`${housing.name} (管理費)`] = Math.round(mCost);
-              housingCost += mCost;
-            }
-            if (housing.tax) {
-              housingDetails[`${housing.name} (税金)`] = housing.tax;
-              housingCost += housing.tax;
-            }
+            if (housing.maintenance) cost += housing.maintenance * 12;
+            if (housing.tax) cost += housing.tax;
           }
-        }
-
-        // Balance Calculation for Owned Housing
-        if (housing.type === 'owned' && housing.loan_monthly && housing.loan_end_age) {
-          if (age <= housing.loan_end_age) {
-             // Simplified: Remaining total payments (not principal only, as we lack interest rate)
-             const remainingYears = housing.loan_end_age - age;
-             const balance = Math.max(0, remainingYears * 12 * housing.loan_monthly);
-             if (balance > 0) {
-               loanBalances[housing.name] = Math.round(balance);
-             }
+          if (cost > 0) {
+            housingDetails[housing.name] = Math.round(cost);
+            housingCost += cost;
           }
-        }
-      });
-
-      // Generic Loans
-      appData.loans.forEach((loan) => {
-        const yearsFromStart = age - currentAge;
-        const monthsFromStart = yearsFromStart * 12;
-        
-        // Expense
-        if (monthsFromStart < loan.remaining_payments) {
-          const monthsThisYear = Math.min(12, loan.remaining_payments - monthsFromStart);
-          const loanPayment = loan.monthly_payment * monthsThisYear;
-          loanDetails[loan.name] = Math.round(loanPayment);
-          loanRepayment += loanPayment;
-        }
-
-        // Balance
-        const monthsPassed = monthsFromStart + 12; // End of this year
-        const remaining = Math.max(0, loan.remaining_payments - monthsPassed);
-        if (remaining > 0 || (monthsFromStart < loan.remaining_payments)) {
-           // Show balance at end of year. If paid off this year, it becomes 0.
-           const balance = remaining * loan.monthly_payment;
-           loanBalances[loan.name] = Math.round(balance);
         }
       });
 
@@ -231,24 +165,28 @@ export function CashFlowTable({ data, appData }: CashFlowTableProps) {
         }
       });
 
+      appData.loans.forEach((loan) => {
+        const yearsFromStart = age - currentAge;
+        const monthsFromStart = yearsFromStart * 12;
+        if (monthsFromStart < loan.remaining_payments) {
+          const monthsThisYear = Math.min(12, loan.remaining_payments - monthsFromStart);
+          const loanPayment = loan.monthly_payment * monthsThisYear;
+          housingDetails[`${loan.name} (ローン)`] = Math.round(loanPayment);
+          housingCost += loanPayment;
+        }
+      });
+
       let totalInvestmentContribution = 0;
       let totalInvestmentWithdrawal = 0;
-      const investmentDetails: { [name: string]: number } = {};
 
-      // 3. Assets (Investment & Withdrawal)
       appData.assets.forEach((asset) => {
         const returnRate = asset.return_rate / 100;
         assetBalances[asset.id] = (assetBalances[asset.id] || 0) * (1 + returnRate);
 
-        const yearlyContrib = asset.yearly_contribution;
-        if (yearlyContrib > 0) {
-          const isAccumulating = !asset.accumulation_end_age || age < asset.accumulation_end_age;
-          const isBeforeWithdrawal = !asset.withdrawal_age || age < asset.withdrawal_age;
-
-          if (isAccumulating && isBeforeWithdrawal) {
-            assetBalances[asset.id] += yearlyContrib;
-            totalInvestmentContribution += yearlyContrib;
-            investmentDetails[asset.name] = yearlyContrib;
+        if (asset.yearly_contribution > 0) {
+          if (!asset.withdrawal_age || age < asset.withdrawal_age) {
+            assetBalances[asset.id] += asset.yearly_contribution;
+            totalInvestmentContribution += asset.yearly_contribution;
           }
         }
 
@@ -256,136 +194,36 @@ export function CashFlowTable({ data, appData }: CashFlowTableProps) {
           const withdrawal = Math.min(asset.withdrawal_amount, assetBalances[asset.id]);
           assetBalances[asset.id] -= withdrawal;
           totalInvestmentWithdrawal += withdrawal;
-          
-          incomeDetails[`${asset.name} (取崩)`] = Math.round(withdrawal);
-          totalIncome += withdrawal;
         }
       });
-
-      // 4. Real Estate Income/Expense & Balance
-      let realEstateCost = 0;
-      const realEstateDetails: { [name: string]: number } = {};
 
       appData.realEstates.forEach((property) => {
-        const purchaseDate = new Date(property.purchase_date);
-        const purchaseYear = purchaseDate.getFullYear();
-        const purchaseMonth = purchaseDate.getMonth();
-
-        const sellDate = property.sell_date ? new Date(property.sell_date) : null;
-        const sellYear = sellDate ? sellDate.getFullYear() : 9999;
-        const sellMonth = sellDate ? sellDate.getMonth() : 11;
-
-        // Check if property is owned in this year
-        if (year >= purchaseYear && year <= sellYear) {
-          let monthsOwned = 12;
-          if (year === purchaseYear) monthsOwned -= purchaseMonth;
-          if (year === sellYear) monthsOwned = sellMonth + 1;
-          if (year === purchaseYear && year === sellYear) monthsOwned = (sellMonth - purchaseMonth) + 1;
-          
-          monthsOwned = Math.max(0, Math.min(12, monthsOwned));
-
-          // Income: Rent
+        if (age >= property.purchase_age) {
           if (property.rent_income) {
-            const rent = safeNum(property.rent_income) * monthsOwned;
-            incomeDetails[`${property.name} (家賃)`] = Math.round(rent);
-            totalIncome += rent;
+            incomeDetails[`${property.name} (賃料)`] = property.rent_income * 12;
+            totalIncome += property.rent_income * 12;
           }
-
-          // Expense: Maintenance
           if (property.maintenance_cost) {
-            const maintenance = safeNum(property.maintenance_cost) * monthsOwned;
-            realEstateDetails[`${property.name} (維持費)`] = Math.round(maintenance);
-            realEstateCost += maintenance;
+            housingDetails[`${property.name} (管理費)`] = property.maintenance_cost * 12;
+            housingCost += property.maintenance_cost * 12;
           }
-
-          // Expense: Property Tax
-          if (property.property_tax && monthsOwned > 0) {
-             realEstateDetails[`${property.name} (固定資産税)`] = safeNum(property.property_tax);
-             realEstateCost += safeNum(property.property_tax);
+          if (property.tax) {
+            housingDetails[`${property.name} (税金)`] = property.tax;
+            housingCost += property.tax;
           }
-
-          // Expense: Loan Repayment
-          if (property.loan_amount && property.loan_duration) {
-            const loanStartYear = purchaseYear;
-            const loanStartMonth = purchaseMonth;
-            
-            const monthsSinceLoanStart = (year - loanStartYear) * 12 - loanStartMonth;
-            const monthlyPayment = calculatePMT(safeNum(property.loan_rate), safeNum(property.loan_duration), safeNum(property.loan_amount) * 10000) / 10000;
-
-            let yearlyLoanPayment = 0;
-            for (let m = 0; m < monthsOwned; m++) {
-              const currentLoanMonth = monthsSinceLoanStart + m;
-              if (currentLoanMonth >= 0 && currentLoanMonth < property.loan_duration) {
-                yearlyLoanPayment += monthlyPayment;
-              }
-            }
-            if (yearlyLoanPayment > 0) {
-              realEstateDetails[`${property.name} (ローン)`] = Math.round(yearlyLoanPayment);
-              realEstateCost += yearlyLoanPayment;
-            }
-
-            // Balance Calculation (End of Year)
-            // Calculate months passed until the END of this year
-            const monthsPassedAtYearEnd = (year - loanStartYear) * 12 + (11 - loanStartMonth) + 1; // Approx end of year
-            // More precise:
-            // If sold this year, balance is 0 (paid off).
-            // If not sold, calculate balance at month 12 of this year.
-            
-            if (year < sellYear || (year === sellYear && !sellDate)) {
-               const monthsPassed = (year - loanStartYear) * 12 + (12 - loanStartMonth); // Total months from start to Dec of this year
-               
-               if (monthsPassed < property.loan_duration && monthsPassed >= 0) {
-                 const r = safeNum(property.loan_rate) / 100 / 12;
-                 const n = property.loan_duration;
-                 const pv = safeNum(property.loan_amount) * 10000;
-                 
-                 let remainingBalance = 0;
-                 if (r === 0) {
-                   // Linear
-                   const pmt = pv / n;
-                   remainingBalance = pv - (pmt * monthsPassed);
-                 } else {
-                   // Amortization Formula for Remaining Balance
-                   // B = PV * ((1+r)^n - (1+r)^p) / ((1+r)^n - 1)
-                   const numerator = Math.pow(1 + r, n) - Math.pow(1 + r, monthsPassed);
-                   const denominator = Math.pow(1 + r, n) - 1;
-                   remainingBalance = pv * (numerator / denominator);
-                 }
-                 
-                 if (remainingBalance > 0) {
-                   loanBalances[property.name] = Math.round(remainingBalance / 10000);
-                 }
-               }
-            }
+          if (property.loan_payments) {
+            housingDetails[`${property.name} (ローン)`] = property.loan_payments * 12;
+            housingCost += property.loan_payments * 12;
           }
-        }
-
-        // Purchase Event
-        if (year === purchaseYear) {
-          realEstateDetails[`${property.name} (初期費用)`] = safeNum(property.initial_cost);
-          realEstateCost += safeNum(property.initial_cost);
-        }
-
-        // Sale Event
-        if (year === sellYear && sellDate) {
-          incomeDetails[`${property.name} (売却益)`] = safeNum(property.sell_price);
-          totalIncome += safeNum(property.sell_price);
-
-          realEstateDetails[`${property.name} (売却費用)`] = safeNum(property.sell_cost);
-          realEstateCost += safeNum(property.sell_cost);
-
-          // Pay off remaining loan balance logic is handled in expense calculation above
-          // For the balance sheet, it becomes 0 at end of year
         }
       });
 
-      const totalExpense = basicExpenses + educationCost + housingCost + realEstateCost + insuranceCost + eventCost + loanRepayment + totalInvestmentContribution;
-      const balance = totalIncome - totalExpense;
+      const totalExpense = basicExpenses + educationCost + housingCost + insuranceCost + eventCost + totalInvestmentContribution;
+      const balance = totalIncome + totalInvestmentWithdrawal - totalExpense;
       cashBalance += balance;
 
       const investmentBalance = Object.values(assetBalances).reduce((sum, val) => sum + val, 0);
       const savings = cashBalance + investmentBalance;
-      const totalLoanBalance = Object.values(loanBalances).reduce((sum, val) => sum + val, 0);
 
       results.push({
         year,
@@ -399,23 +237,14 @@ export function CashFlowTable({ data, appData }: CashFlowTableProps) {
         educationDetails,
         housingCost: Math.round(housingCost),
         housingDetails,
-        realEstateCost: Math.round(realEstateCost),
-        realEstateDetails,
         insuranceCost: Math.round(insuranceCost),
         insuranceDetails,
-        loanRepayment: Math.round(loanRepayment),
-        loanDetails,
-        investmentContribution: Math.round(totalInvestmentContribution),
-        investmentDetails,
-        investmentWithdrawal: Math.round(totalInvestmentWithdrawal),
         eventCost: Math.round(eventCost),
         eventNames: eventNames.join(', '),
         balance: Math.round(balance),
         cashBalance: Math.round(cashBalance),
         investmentBalance: Math.round(investmentBalance),
         savings: Math.round(savings),
-        loanBalances,
-        totalLoanBalance: Math.round(totalLoanBalance),
       });
     }
 
@@ -423,21 +252,13 @@ export function CashFlowTable({ data, appData }: CashFlowTableProps) {
   };
 
   const detailedData = calculateDetailedData();
-  const otherFamilyMembers = appData.familyMembers.filter((member) => member.relation !== 'self');
-
-  // Collect all unique loan names for the balance table
-  const allLoanNames = new Set<string>();
-  detailedData.forEach(d => {
-    Object.keys(d.loanBalances).forEach(name => allLoanNames.add(name));
-  });
-  const loanNamesList = Array.from(allLoanNames).sort();
 
   const toggleSection = (key: string) => {
     setExpandedSections((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
   const handleDownloadCSV = () => {
-    const headers = ['西暦', '年齢', ...appData.familyMembers.map((m) => m.name), '収入', '基本生活費', '教育費', '住居費', '不動産', '保険料', 'ローン返済', '金融資産積立', 'イベント費用', '年間収支', '貯蓄額', '金融資産残高', '総資産残高', 'ローン残高合計'];
+    const headers = ['西暦', '年齢', ...appData.familyMembers.map((m) => m.name), '収入', '基本生活費', '教育費', '住居費', '保険料', 'イベント費用', '年間収支', '現金残高', '金融資産残高', '総資産残高'];
     const rows = detailedData.map((d) => [
       d.year,
       d.age,
@@ -446,16 +267,12 @@ export function CashFlowTable({ data, appData }: CashFlowTableProps) {
       d.basicExpenses,
       d.educationCost,
       d.housingCost,
-      d.realEstateCost,
       d.insuranceCost,
-      d.loanRepayment,
-      d.investmentContribution,
       d.eventCost,
       d.balance,
       d.cashBalance,
       d.investmentBalance,
       d.savings,
-      d.totalLoanBalance,
     ]);
 
     const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
@@ -468,29 +285,24 @@ export function CashFlowTable({ data, appData }: CashFlowTableProps) {
     URL.revokeObjectURL(url);
   };
 
-  const renderDetailRows = (detailsKey: string, details: { [name: string]: number }[], label: string, alwaysRender: boolean = false) => {
+  const renderDetailRows = (detailsKey: string, details: { [name: string]: number }[], label: string) => {
     const allKeys = new Set<string>();
     details.forEach((d) => Object.keys(d).forEach((k) => allKeys.add(k)));
     const keys = Array.from(allKeys).sort();
 
-    if (keys.length === 0 && !alwaysRender) return null;
+    if (keys.length === 0) return null;
 
     const isExpanded = expandedSections[detailsKey];
-    const hasDetails = keys.length > 0;
 
     return (
       <>
         <tr
-          className={`cursor-pointer hover:bg-gray-100 transition-colors ${!hasDetails ? 'cursor-default' : ''}`}
-          onClick={() => hasDetails && toggleSection(detailsKey)}
+          className="cursor-pointer hover:bg-gray-100 transition-colors"
+          onClick={() => toggleSection(detailsKey)}
         >
           <td className="px-3 py-2 text-gray-700 font-medium bg-gray-50 sticky left-0 z-10 border-r border-gray-300">
             <span className="flex items-center">
-              {hasDetails ? (
-                isExpanded ? <ChevronDown className="h-4 w-4 mr-1 text-gray-400" /> : <ChevronRight className="h-4 w-4 mr-1 text-gray-400" />
-              ) : (
-                <span className="w-5" />
-              )}
+              {isExpanded ? <ChevronDown className="h-4 w-4 mr-1 text-gray-400" /> : <ChevronRight className="h-4 w-4 mr-1 text-gray-400" />}
               {label}
             </span>
           </td>
@@ -503,7 +315,7 @@ export function CashFlowTable({ data, appData }: CashFlowTableProps) {
             );
           })}
         </tr>
-        {isExpanded && hasDetails &&
+        {isExpanded &&
           keys.map((key) => (
             <tr key={key} className="bg-blue-50">
               <td className="px-3 py-1 text-gray-600 text-xs pl-8 sticky left-0 z-10 border-r border-gray-300 bg-blue-50">
@@ -531,232 +343,161 @@ export function CashFlowTable({ data, appData }: CashFlowTableProps) {
   };
 
   return (
-    <div className="space-y-8">
-      {/* Main Cash Flow Table */}
-      <div>
-        <div className="flex justify-end mb-2">
-          <button
-            onClick={handleDownloadCSV}
-            className="text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 py-1 px-3 rounded flex items-center"
-          >
-            <Download className="h-4 w-4 mr-1" />
-            CSV保存
-          </button>
-        </div>
-        <div className="overflow-x-auto max-h-[600px] border rounded">
-          <table className="min-w-full text-sm border-collapse">
-            <thead className="bg-gray-100 sticky top-0 z-20 shadow-sm">
-              {/* Row 1: Years */}
-              <tr>
-                <th className="px-3 py-2 text-left font-medium text-gray-600 sticky left-0 bg-gray-100 z-30 min-w-[150px] border-r border-gray-300 border-b border-gray-200">
-                  西暦
-                </th>
-                {detailedData.map((d, i) => (
-                  <th key={i} className="px-3 py-2 text-right font-medium text-gray-600 min-w-[80px] border-b border-gray-200">
-                    {d.year}
-                  </th>
-                ))}
-              </tr>
-              {/* Row 2: Main Person Age */}
-              <tr>
-                <th className="px-3 py-2 text-left font-medium text-gray-700 sticky left-0 bg-gray-100 z-30 border-r border-gray-300">
-                  {appData.userSettings.user_name || '本人'} (年齢)
-                </th>
-                {detailedData.map((d, i) => (
-                  <th key={i} className="px-3 py-2 text-right font-normal text-gray-700">
-                    {d.age}歳
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {/* Family Information Section */}
-              {otherFamilyMembers.length > 0 && (
-                <>
-                  <tr className="bg-gray-200">
-                    <td colSpan={detailedData.length + 1} className="px-3 py-1 font-bold text-xs text-gray-700 sticky left-0 z-10">
-                      家族情報
-                    </td>
-                  </tr>
-                  {otherFamilyMembers.map((member) => (
-                    <tr key={member.id}>
-                      <td className="px-3 py-2 text-gray-700 font-medium bg-gray-50 sticky left-0 z-10 border-r border-gray-300">
-                        {member.name} ({getRelationLabel(member.relation)})
-                      </td>
-                      {detailedData.map((d, i) => (
-                        <td key={i} className="px-3 py-2 text-right text-gray-500 text-sm">
-                          {d.familyAges[member.id] !== null ? `${d.familyAges[member.id]}歳` : '-'}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </>
-              )}
-
-              <tr className="bg-blue-100">
-                <td colSpan={detailedData.length + 1} className="px-3 py-1 font-bold text-xs text-blue-800 sticky left-0 z-10">
-                  収入
-                </td>
-              </tr>
-              {renderDetailRows('income', detailedData.map((d) => d.incomeDetails), '収入合計')}
-
-              <tr className="bg-red-100">
-                <td colSpan={detailedData.length + 1} className="px-3 py-1 font-bold text-xs text-red-800 sticky left-0 z-10">
-                  支出
-                </td>
-              </tr>
-              {renderDetailRows('expense', detailedData.map((d) => d.expenseDetails), '基本生活費')}
-              {renderDetailRows('education', detailedData.map((d) => d.educationDetails), '教育費')}
-              {renderDetailRows('housing', detailedData.map((d) => d.housingDetails), '住居費')}
-              {renderDetailRows('realEstate', detailedData.map((d) => d.realEstateDetails), '不動産', true)}
-              {renderDetailRows('insurance', detailedData.map((d) => d.insuranceDetails), '保険料', true)}
-              {renderDetailRows('loans', detailedData.map((d) => d.loanDetails), 'ローン返済', true)}
-              {renderDetailRows('investment', detailedData.map((d) => d.investmentDetails), '金融資産積立', true)}
-
-              <tr className="bg-yellow-100">
-                <td colSpan={detailedData.length + 1} className="px-3 py-1 font-bold text-xs text-yellow-800 sticky left-0 z-10">
-                  イベント
-                </td>
-              </tr>
-              <tr>
-                <td className="px-3 py-2 text-gray-700 font-medium bg-gray-50 sticky left-0 z-10 border-r border-gray-300">
-                  イベント内容
-                </td>
-                {detailedData.map((d, i) => (
-                  <td key={i} className="px-3 py-2 text-right text-xs whitespace-nowrap">
-                    {d.eventNames || '-'}
-                  </td>
-                ))}
-              </tr>
-              <tr>
-                <td className="px-3 py-2 text-gray-700 font-medium bg-gray-50 sticky left-0 z-10 border-r border-gray-300">
-                  イベント費用
-                </td>
-                {detailedData.map((d, i) => (
-                  <td key={i} className="px-3 py-2 text-right whitespace-nowrap">
-                    {d.eventCost !== 0 ? (
-                      d.eventCost < 0 ? (
-                        <span className="text-green-600">+{Math.abs(d.eventCost).toLocaleString()}</span>
-                      ) : (
-                        <span className="text-red-600">-{d.eventCost.toLocaleString()}</span>
-                      )
-                    ) : '-'}
-                  </td>
-                ))}
-              </tr>
-
-              <tr className="bg-green-100">
-                <td colSpan={detailedData.length + 1} className="px-3 py-1 font-bold text-xs text-green-800 sticky left-0 z-10">
-                  資産推移
-                </td>
-              </tr>
-              <tr>
-                <td className="px-3 py-2 text-gray-700 font-bold bg-gray-50 sticky left-0 z-10 border-r border-gray-300">
-                  年間収支
-                </td>
-                {detailedData.map((d, i) => (
-                  <td key={i} className={`px-3 py-2 text-right whitespace-nowrap font-bold ${d.balance < 0 ? 'text-red-600' : 'text-blue-600'}`}>
-                    {d.balance.toLocaleString()}
-                  </td>
-                ))}
-              </tr>
-              <tr>
-                <td className="px-3 py-2 text-gray-700 font-medium bg-gray-50 sticky left-0 z-10 border-r border-gray-300">
-                  貯蓄額
-                </td>
-                {detailedData.map((d, i) => (
-                  <td key={i} className={`px-3 py-2 text-right whitespace-nowrap ${d.cashBalance < 0 ? 'text-red-600 font-bold' : ''}`}>
-                    {d.cashBalance.toLocaleString()}
-                  </td>
-                ))}
-              </tr>
-              <tr>
-                <td className="px-3 py-2 text-gray-700 font-medium bg-gray-50 sticky left-0 z-10 border-r border-gray-300">
-                  金融資産残高
-                </td>
-                {detailedData.map((d, i) => (
-                  <td key={i} className="px-3 py-2 text-right whitespace-nowrap">
-                    {d.investmentBalance.toLocaleString()}
-                  </td>
-                ))}
-              </tr>
-              <tr className="bg-green-50">
-                <td className="px-3 py-2 text-gray-700 font-bold bg-green-50 sticky left-0 z-10 border-r border-gray-300">
-                  総資産残高
-                </td>
-                {detailedData.map((d, i) => (
-                  <td key={i} className={`px-3 py-2 text-right whitespace-nowrap font-bold ${d.savings < 0 ? 'text-red-600 bg-red-50' : ''}`}>
-                    {d.savings.toLocaleString()}
-                  </td>
-                ))}
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <div className="mt-2 text-xs text-gray-500 text-center py-2">
-          単位：万円 / 項目をクリックすると詳細を表示
-        </div>
+    <div>
+      <div className="flex justify-end mb-2">
+        <button
+          onClick={handleDownloadCSV}
+          className="text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 py-1 px-3 rounded flex items-center"
+        >
+          <Download className="h-4 w-4 mr-1" />
+          CSV保存
+        </button>
       </div>
-
-      {/* Loan Balance Table */}
-      {loanNamesList.length > 0 && (
-        <div>
-          <h3 className="text-lg font-bold text-gray-800 mb-3">ローン返済残高一覧</h3>
-          <div className="overflow-x-auto max-h-[400px] border rounded">
-            <table className="min-w-full text-sm border-collapse">
-              <thead className="bg-gray-100 sticky top-0 z-20 shadow-sm">
-                <tr>
-                  <th className="px-3 py-2 text-left font-medium text-gray-600 sticky left-0 bg-gray-100 z-30 min-w-[150px] border-r border-gray-300 border-b border-gray-200">
-                    西暦
-                  </th>
-                  {detailedData.map((d, i) => (
-                    <th key={i} className="px-3 py-2 text-right font-medium text-gray-600 min-w-[80px] border-b border-gray-200">
-                      {d.year}
-                    </th>
-                  ))}
-                </tr>
-                <tr>
-                  <th className="px-3 py-2 text-left font-medium text-gray-700 sticky left-0 bg-gray-100 z-30 border-r border-gray-300">
-                    年齢
-                  </th>
-                  {detailedData.map((d, i) => (
-                    <th key={i} className="px-3 py-2 text-right font-normal text-gray-700">
-                      {d.age}歳
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {loanNamesList.map((loanName) => (
-                  <tr key={loanName}>
-                    <td className="px-3 py-2 text-gray-700 font-medium bg-gray-50 sticky left-0 z-10 border-r border-gray-300">
-                      {loanName}
-                    </td>
-                    {detailedData.map((d, i) => (
-                      <td key={i} className="px-3 py-2 text-right whitespace-nowrap text-gray-600">
-                        {d.loanBalances[loanName] ? d.loanBalances[loanName].toLocaleString() : '-'}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-                <tr className="bg-red-50 font-bold">
-                  <td className="px-3 py-2 text-red-800 sticky left-0 z-10 border-r border-gray-300 bg-red-50">
-                    残高合計
+      <div className="overflow-x-auto max-h-[600px] border rounded">
+        <table className="min-w-full text-sm border-collapse">
+          <thead className="bg-gray-100 sticky top-0 z-20">
+            <tr>
+              <th className="px-3 py-2 text-left font-medium text-gray-600 sticky left-0 bg-gray-100 z-30 min-w-[150px] border-r border-gray-300">
+                西暦
+              </th>
+              {detailedData.map((d, i) => (
+                <th key={i} className="px-3 py-2 text-right font-medium text-gray-600 min-w-[80px]">
+                  {d.year}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            <tr className="bg-gray-200">
+              <td colSpan={detailedData.length + 1} className="px-3 py-1 font-bold text-xs text-gray-700 sticky left-0 z-10">
+                家族情報
+              </td>
+            </tr>
+            <tr>
+              <td className="px-3 py-2 text-gray-700 font-medium bg-gray-50 sticky left-0 z-10 border-r border-gray-300">
+                {appData.userSettings.user_name || '本人'} (本人)
+              </td>
+              {detailedData.map((d, i) => (
+                <td key={i} className="px-3 py-2 text-right text-gray-500 text-sm">
+                  {d.age}歳
+                </td>
+              ))}
+            </tr>
+            {appData.familyMembers
+              .filter((member) => member.relation !== 'self')
+              .map((member) => (
+                <tr key={member.id}>
+                  <td className="px-3 py-2 text-gray-700 font-medium bg-gray-50 sticky left-0 z-10 border-r border-gray-300">
+                    {member.name} ({getRelationLabel(member.relation)})
                   </td>
                   {detailedData.map((d, i) => (
-                    <td key={i} className="px-3 py-2 text-right whitespace-nowrap text-red-800">
-                      {d.totalLoanBalance > 0 ? d.totalLoanBalance.toLocaleString() : '-'}
+                    <td key={i} className="px-3 py-2 text-right text-gray-500 text-sm">
+                      {d.familyAges[member.id] !== null ? `${d.familyAges[member.id]}歳` : '-'}
                     </td>
                   ))}
                 </tr>
-              </tbody>
-            </table>
-          </div>
-          <div className="mt-2 text-xs text-gray-500 text-center py-2">
-            単位：万円 / 年末時点の残高を表示
-          </div>
-        </div>
-      )}
+              ))}
+
+            <tr className="bg-blue-100">
+              <td colSpan={detailedData.length + 1} className="px-3 py-1 font-bold text-xs text-blue-800 sticky left-0 z-10">
+                収入
+              </td>
+            </tr>
+            {renderDetailRows('income', detailedData.map((d) => d.incomeDetails), '収入合計')}
+
+            <tr className="bg-red-100">
+              <td colSpan={detailedData.length + 1} className="px-3 py-1 font-bold text-xs text-red-800 sticky left-0 z-10">
+                支出
+              </td>
+            </tr>
+            {renderDetailRows('expense', detailedData.map((d) => d.expenseDetails), '基本生活費')}
+            {renderDetailRows('education', detailedData.map((d) => d.educationDetails), '教育費')}
+            {renderDetailRows('housing', detailedData.map((d) => d.housingDetails), '住居費・ローン')}
+            {renderDetailRows('insurance', detailedData.map((d) => d.insuranceDetails), '保険料')}
+
+            <tr className="bg-yellow-100">
+              <td colSpan={detailedData.length + 1} className="px-3 py-1 font-bold text-xs text-yellow-800 sticky left-0 z-10">
+                イベント
+              </td>
+            </tr>
+            <tr>
+              <td className="px-3 py-2 text-gray-700 font-medium bg-gray-50 sticky left-0 z-10 border-r border-gray-300">
+                イベント内容
+              </td>
+              {detailedData.map((d, i) => (
+                <td key={i} className="px-3 py-2 text-right text-xs whitespace-nowrap">
+                  {d.eventNames || '-'}
+                </td>
+              ))}
+            </tr>
+            <tr>
+              <td className="px-3 py-2 text-gray-700 font-medium bg-gray-50 sticky left-0 z-10 border-r border-gray-300">
+                イベント費用
+              </td>
+              {detailedData.map((d, i) => (
+                <td key={i} className="px-3 py-2 text-right whitespace-nowrap">
+                  {d.eventCost !== 0 ? (
+                    d.eventCost < 0 ? (
+                      <span className="text-green-600">+{Math.abs(d.eventCost).toLocaleString()}</span>
+                    ) : (
+                      <span className="text-red-600">-{d.eventCost.toLocaleString()}</span>
+                    )
+                  ) : '-'}
+                </td>
+              ))}
+            </tr>
+
+            <tr className="bg-green-100">
+              <td colSpan={detailedData.length + 1} className="px-3 py-1 font-bold text-xs text-green-800 sticky left-0 z-10">
+                資産推移
+              </td>
+            </tr>
+            <tr>
+              <td className="px-3 py-2 text-gray-700 font-bold bg-gray-50 sticky left-0 z-10 border-r border-gray-300">
+                年間収支
+              </td>
+              {detailedData.map((d, i) => (
+                <td key={i} className={`px-3 py-2 text-right whitespace-nowrap font-bold ${d.balance < 0 ? 'text-red-600' : 'text-blue-600'}`}>
+                  {d.balance.toLocaleString()}
+                </td>
+              ))}
+            </tr>
+            <tr>
+              <td className="px-3 py-2 text-gray-700 font-medium bg-gray-50 sticky left-0 z-10 border-r border-gray-300">
+                現金残高
+              </td>
+              {detailedData.map((d, i) => (
+                <td key={i} className={`px-3 py-2 text-right whitespace-nowrap ${d.cashBalance < 0 ? 'text-red-600 font-bold' : ''}`}>
+                  {d.cashBalance.toLocaleString()}
+                </td>
+              ))}
+            </tr>
+            <tr>
+              <td className="px-3 py-2 text-gray-700 font-medium bg-gray-50 sticky left-0 z-10 border-r border-gray-300">
+                金融資産残高
+              </td>
+              {detailedData.map((d, i) => (
+                <td key={i} className="px-3 py-2 text-right whitespace-nowrap">
+                  {d.investmentBalance.toLocaleString()}
+                </td>
+              ))}
+            </tr>
+            <tr className="bg-green-50">
+              <td className="px-3 py-2 text-gray-700 font-bold bg-green-50 sticky left-0 z-10 border-r border-gray-300">
+                総資産残高
+              </td>
+              {detailedData.map((d, i) => (
+                <td key={i} className={`px-3 py-2 text-right whitespace-nowrap font-bold ${d.savings < 0 ? 'text-red-600 bg-red-50' : ''}`}>
+                  {d.savings.toLocaleString()}
+                </td>
+              ))}
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div className="mt-2 text-xs text-gray-500 text-center py-2">
+        単位：万円 / 項目をクリックすると詳細を表示
+      </div>
     </div>
   );
 }

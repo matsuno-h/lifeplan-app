@@ -1,4 +1,4 @@
-import { Upload, Download, Trash2, LogOut, User, LogIn, X, LayoutGrid } from 'lucide-react';
+import { Upload, Download, Trash2, TrendingUp, LogOut, User, LogIn, X, LayoutGrid } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useState } from 'react';
 
@@ -63,6 +63,7 @@ export function Header({ onExport, onImport, onClear, onShowDashboard }: HeaderP
           <div className="flex-1"></div>
           <div className="text-center flex-1">
             <h1 className="text-3xl font-bold text-blue-800 mb-2 flex items-center justify-center">
+              <TrendingUp className="mr-2" />
               ライフプラン シミュレーター
             </h1>
             <p className="text-gray-600">あなたの未来の資産推移を可視化しましょう</p>

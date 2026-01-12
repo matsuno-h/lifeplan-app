@@ -2,20 +2,6 @@ import { Settings, Users, Edit2, Trash2, ChevronUp, ChevronDown } from 'lucide-r
 import { UserSettings, FamilyMember } from '../../types';
 import { useState } from 'react';
 
-// Helper to format number with commas for display/input masking
-const formatWithCommas = (value: number | string | null): string => {
-  if (value === null || value === undefined || value === '') return '';
-  const num = typeof value === 'string' ? value.replace(/,/g, '') : value;
-  if (isNaN(Number(num))) return String(value);
-  return Number(num).toLocaleString('en-US');
-};
-
-// Helper to parse formatted string input back to number
-const parseFormattedInput = (value: string | null): number => {
-  if (!value) return 0;
-  return parseInt(value.replace(/,/g, '') || '0');
-};
-
 interface BasicSettingsTabProps {
   settings: UserSettings;
   familyMembers: FamilyMember[];
@@ -36,28 +22,10 @@ export function BasicSettingsTab({
   onFamilyReorder,
 }: BasicSettingsTabProps) {
   const [editingFamilyId, setEditingFamilyId] = useState<string | null>(null);
-  const [currentSavingsInput, setCurrentSavingsInput] = useState(formatWithCommas(settings.current_savings));
-
-  // Update input state when settings prop changes (e.g., initial load or external update)
-  useState(() => {
-    setCurrentSavingsInput(formatWithCommas(settings.current_savings));
-  });
-
-  const handleSavingsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const rawValue = e.target.value;
-    // Allow only digits and commas
-    const numericValue = rawValue.replace(/[^0-9,]/g, '');
-    // Apply comma formatting
-    const formattedValue = numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-    setCurrentSavingsInput(formattedValue);
-  };
 
   const handleSettingsSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    
-    const parsedSavings = parseFormattedInput(currentSavingsInput);
-
     onSettingsUpdate({
       user_name: formData.get('user_name') as string,
       birth_date: formData.get('birth_date') as string,
@@ -65,7 +33,7 @@ export function BasicSettingsTab({
       disability: formData.get('disability') as 'none' | 'present',
       life_expectancy: parseInt(formData.get('life_expectancy') as string) || 85,
       retirement_age: parseInt(formData.get('retirement_age') as string),
-      current_savings: parsedSavings, // Use parsed value
+      current_savings: parseInt(formData.get('current_savings') as string),
     });
   };
 
@@ -183,34 +151,32 @@ export function BasicSettingsTab({
             </div>
           </div>
           <div className="border-t pt-4 mt-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">シミュレーション終了年齢</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">退職年齢</label>
             <div className="flex items-center">
               <input
                 type="number"
                 name="retirement_age"
                 defaultValue={settings.retirement_age}
-                placeholder="100"
+                placeholder="65"
                 className="flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2 text-sm"
                 required
                 min="0"
-                max="120"
+                max="100"
               />
               <span className="ml-2 text-gray-500 text-sm whitespace-nowrap">歳</span>
             </div>
-            <p className="text-xs text-gray-500 mt-1">※この年齢までグラフや表が表示されます</p>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              現在の貯蓄額 <span className="text-xs text-red-500 font-normal">※投資資産は含めない</span>
+              現在の預貯金 (現金) <span className="text-xs text-red-500 font-normal">※投資資産は含めない</span>
             </label>
             <div className="flex items-center">
               <input
-                type="text" // Changed to text for masking
+                type="number"
                 name="current_savings"
-                value={currentSavingsInput} // Use state for controlled input
-                onChange={handleSavingsChange} // Use custom handler
+                defaultValue={settings.current_savings}
                 placeholder="300"
-                className="flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2 text-sm text-right"
+                className="flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2 text-sm"
                 required
                 min="0"
               />
