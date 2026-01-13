@@ -165,8 +165,9 @@ ${Deno.env.get('APP_URL') || 'http://localhost:5173'}
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: Deno.env.get('RESEND_FROM_EMAIL') || 'ライフプランシミュレーター <onboarding@resend.dev>',
+        from: 'ライフプラン シミュレーター <info@lifeplansimulator.com>',
         to: [inviteeEmail],
+        reply_to: 'info@lifeplansimulator.com',
         subject: `【ライフプランシミュレーター】${inviterName}さんがプランを共有しました`,
         html: emailHtml,
         text: emailText,
@@ -175,8 +176,19 @@ ${Deno.env.get('APP_URL') || 'http://localhost:5173'}
 
     if (!response.ok) {
       const errorData = await response.text();
-      console.error('Resend API error:', errorData);
-      throw new Error(`メール送信に失敗しました: ${response.status}`);
+      console.error('Resend API error:', response.status, errorData);
+
+      let errorMessage = 'メール送信に失敗しました';
+      try {
+        const errorJson = JSON.parse(errorData);
+        if (errorJson.message) {
+          errorMessage = `メール送信に失敗しました: ${errorJson.message}`;
+        }
+      } catch {
+        errorMessage = `メール送信に失敗しました（ステータス: ${response.status}）`;
+      }
+
+      throw new Error(errorMessage);
     }
 
     const data = await response.json();
