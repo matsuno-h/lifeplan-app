@@ -191,7 +191,10 @@ export function CashFlowTable({ data, appData }: CashFlowTableProps) {
         assetBalances[asset.id] = (assetBalances[asset.id] || 0) * (1 + returnRate);
 
         if (asset.yearly_contribution > 0) {
-          if (!asset.withdrawal_age || age < asset.withdrawal_age) {
+          const shouldContribute = !asset.withdrawal_age || age < asset.withdrawal_age;
+          const belowEndAge = !asset.contribution_end_age || age <= asset.contribution_end_age;
+
+          if (shouldContribute && belowEndAge) {
             assetBalances[asset.id] += asset.yearly_contribution;
             totalInvestmentContribution += asset.yearly_contribution;
             investmentContributionDetails[asset.name] = asset.yearly_contribution;

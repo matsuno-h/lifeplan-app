@@ -111,7 +111,10 @@ export function calculateCashFlow(data: AppData): CashFlowData[] {
 
       const yearlyContrib = safeNum(asset.yearly_contribution);
       if (yearlyContrib > 0) {
-        if (!asset.withdrawal_age || age < asset.withdrawal_age) {
+        const shouldContribute = !asset.withdrawal_age || age < asset.withdrawal_age;
+        const belowEndAge = !asset.contribution_end_age || age <= asset.contribution_end_age;
+
+        if (shouldContribute && belowEndAge) {
           assetBalances[asset.id] += yearlyContrib;
           totalInvestmentContribution += yearlyContrib;
         }

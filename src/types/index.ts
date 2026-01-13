@@ -90,8 +90,10 @@ export interface Housing {
 export interface Asset {
   id: string;
   name: string;
+  asset_type: string;
   current_value: number;
   yearly_contribution: number;
+  contribution_end_age?: number;
   return_rate: number;
   withdrawal_age?: number;
   withdrawal_amount?: number;

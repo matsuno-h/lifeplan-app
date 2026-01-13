@@ -31,8 +31,10 @@ export function AssetsTab({
     const formData = new FormData(e.currentTarget);
     const asset = {
       name: formData.get('asset_name') as string,
+      asset_type: formData.get('asset_type') as string,
       current_value: parseInt(formData.get('asset_amount') as string),
       yearly_contribution: parseInt(formData.get('asset_yearly') as string) || 0,
+      contribution_end_age: parseInt(formData.get('asset_contribution_end_age') as string) || undefined,
       return_rate: parseFloat(formData.get('asset_return') as string) || 0,
       withdrawal_age: parseInt(formData.get('asset_withdrawal_age') as string) || undefined,
       withdrawal_amount: parseInt(formData.get('asset_withdrawal_amount') as string) || undefined,
@@ -52,9 +54,11 @@ export function AssetsTab({
     const form = document.getElementById('asset-form') as HTMLFormElement;
     if (form) {
       (form.elements.namedItem('asset_name') as HTMLInputElement).value = asset.name;
+      (form.elements.namedItem('asset_type') as HTMLSelectElement).value = asset.asset_type || '投資信託';
       (form.elements.namedItem('asset_amount') as HTMLInputElement).value = asset.current_value.toString();
       (form.elements.namedItem('asset_return') as HTMLInputElement).value = asset.return_rate.toString();
       (form.elements.namedItem('asset_yearly') as HTMLInputElement).value = asset.yearly_contribution.toString();
+      (form.elements.namedItem('asset_contribution_end_age') as HTMLInputElement).value = asset.contribution_end_age?.toString() || '';
       (form.elements.namedItem('asset_withdrawal_age') as HTMLInputElement).value = asset.withdrawal_age?.toString() || '';
       (form.elements.namedItem('asset_withdrawal_amount') as HTMLInputElement).value = asset.withdrawal_amount?.toString() || '';
     }
@@ -117,6 +121,26 @@ export function AssetsTab({
               />
             </div>
             <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">種類</label>
+              <select
+                name="asset_type"
+                className="w-full rounded-md border-gray-300 border p-2 text-sm"
+                required
+              >
+                <option value="投資信託">投資信託</option>
+                <option value="国内株式">国内株式</option>
+                <option value="海外株式">海外株式</option>
+                <option value="国内債券">国内債券</option>
+                <option value="海外債券">海外債券</option>
+                <option value="REIT">REIT</option>
+                <option value="金・銀・プラチナ">金・銀・プラチナ</option>
+                <option value="FX">FX</option>
+                <option value="仮想通貨">仮想通貨</option>
+              </select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">現在の評価額</label>
               <div className="flex items-center">
                 <input
@@ -129,8 +153,6 @@ export function AssetsTab({
                 <span className="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
               </div>
             </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">年利回り</label>
               <div className="flex items-center">
@@ -145,17 +167,34 @@ export function AssetsTab({
                 <span className="ml-2 text-gray-500 text-sm whitespace-nowrap">%</span>
               </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">積立額 (年額)</label>
-              <div className="flex items-center">
-                <input
-                  type="number"
-                  name="asset_yearly"
-                  placeholder="60"
-                  className="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm"
-                  min="0"
-                />
-                <span className="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
+          </div>
+          <div className="p-3 bg-blue-50 rounded space-y-3">
+            <p className="text-xs font-bold text-gray-700">積立設定 (任意)</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">積立額 (年額)</label>
+                <div className="flex items-center">
+                  <input
+                    type="number"
+                    name="asset_yearly"
+                    placeholder="60"
+                    className="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm"
+                    min="0"
+                  />
+                  <span className="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">積立終了年齢</label>
+                <div className="flex items-center">
+                  <input
+                    type="number"
+                    name="asset_contribution_end_age"
+                    placeholder="65"
+                    className="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm"
+                  />
+                  <span className="ml-2 text-gray-500 text-sm whitespace-nowrap">歳まで</span>
+                </div>
               </div>
             </div>
           </div>
@@ -220,10 +259,14 @@ export function AssetsTab({
                 <div className="flex justify-between items-center">
                   <div>
                     <span className="font-medium">{asset.name}</span>
+                    <span className="text-xs text-gray-500 ml-2">({asset.asset_type})</span>
                     <span className="text-gray-600 ml-2">{asset.current_value}万円</span>
                     <span className="text-gray-500 ml-2">利回り{asset.return_rate}%</span>
                     {asset.yearly_contribution > 0 && (
-                      <span className="text-gray-500 ml-2">積立{asset.yearly_contribution}万円/年</span>
+                      <span className="text-gray-500 ml-2">
+                        積立{asset.yearly_contribution}万円/年
+                        {asset.contribution_end_age && `(${asset.contribution_end_age}歳まで)`}
+                      </span>
                     )}
                   </div>
                   <div className="flex items-center gap-1">
