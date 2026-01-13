@@ -5,6 +5,7 @@ import { AppData } from '../types';
 
 interface UseSupabaseDataOptions {
   planId?: string | null;
+  planNumber?: number;
   permission?: 'view' | 'edit' | 'owner';
 }
 
@@ -14,6 +15,7 @@ export function useSupabaseData(initialData: AppData, options?: UseSupabaseDataO
   const [loading, setLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error' | null>(null);
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(options?.planId || null);
+  const [currentPlanNumber, setCurrentPlanNumber] = useState<number>(options?.planNumber || 1);
   const [isOwner, setIsOwner] = useState(options?.permission === 'owner' || !options);
   const [canEdit, setCanEdit] = useState(
     options?.permission === 'owner' ||
@@ -57,6 +59,7 @@ export function useSupabaseData(initialData: AppData, options?: UseSupabaseDataO
           .insert({
             user_id: user.id,
             plan_data: newData,
+            plan_number: currentPlanNumber,
           })
           .select()
           .single();
@@ -70,6 +73,7 @@ export function useSupabaseData(initialData: AppData, options?: UseSupabaseDataO
 
         if (insertedData) {
           setCurrentPlanId(insertedData.id);
+          setCurrentPlanNumber(insertedData.plan_number);
           setIsOwner(true);
           setCanEdit(true);
         }
@@ -82,7 +86,7 @@ export function useSupabaseData(initialData: AppData, options?: UseSupabaseDataO
       setSaveStatus('error');
       setTimeout(() => setSaveStatus(null), 3000);
     }
-  }, [user, currentPlanId, canEdit]);
+  }, [user, currentPlanId, currentPlanNumber, canEdit]);
 
   const loadDataFromSupabase = useCallback(async () => {
     if (!user) {
@@ -116,12 +120,41 @@ export function useSupabaseData(initialData: AppData, options?: UseSupabaseDataO
         if (planData) {
           setData(planData.plan_data as AppData);
           setCurrentPlanId(planData.id);
+          setCurrentPlanNumber(planData.plan_number);
           setIsOwner(planData.user_id === user.id);
           setCanEdit(planData.user_id === user.id || options?.permission === 'edit');
+        }
+      } else if (options?.planNumber) {
+        const { data: planData, error } = await supabase
+          .from('user_life_plans')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('plan_number', options.planNumber)
+          .maybeSingle();
+
+        if (error) {
+          console.error('Error loading plan:', error);
+          setLoading(false);
+          return;
+        }
+
+        if (planData) {
+          setData(planData.plan_data as AppData);
+          setCurrentPlanId(planData.id);
+          setCurrentPlanNumber(planData.plan_number);
+          setIsOwner(true);
+          setCanEdit(true);
+        } else {
+          setData(initialData);
+          setCurrentPlanId(null);
+          setCurrentPlanNumber(options.planNumber);
+          setIsOwner(true);
+          setCanEdit(true);
         }
       } else {
         setData(initialData);
         setCurrentPlanId(null);
+        setCurrentPlanNumber(1);
         setIsOwner(true);
         setCanEdit(true);
       }
@@ -130,7 +163,7 @@ export function useSupabaseData(initialData: AppData, options?: UseSupabaseDataO
       console.error('Error in loadDataFromSupabase:', error);
       setLoading(false);
     }
-  }, [user, options?.planId, options?.permission, initialData]);
+  }, [user, options?.planId, options?.planNumber, options?.permission, initialData]);
 
   useEffect(() => {
     loadDataFromSupabase();
@@ -141,12 +174,17 @@ export function useSupabaseData(initialData: AppData, options?: UseSupabaseDataO
       setCurrentPlanId(options.planId);
       setIsOwner(options.permission === 'owner');
       setCanEdit(options.permission === 'owner' || options.permission === 'edit');
+    } else if (options?.planNumber) {
+      setCurrentPlanNumber(options.planNumber);
+      setIsOwner(true);
+      setCanEdit(true);
     } else {
       setCurrentPlanId(null);
+      setCurrentPlanNumber(1);
       setIsOwner(true);
       setCanEdit(true);
     }
-  }, [options?.planId, options?.permission]);
+  }, [options?.planId, options?.planNumber, options?.permission]);
 
   const updateData = useCallback((updaterOrData: ((prev: AppData) => AppData) | AppData) => {
     if (!canEdit) {
@@ -174,6 +212,7 @@ export function useSupabaseData(initialData: AppData, options?: UseSupabaseDataO
     loading,
     saveStatus,
     planId: currentPlanId,
+    planNumber: currentPlanNumber,
     isOwner,
     canEdit,
   };
