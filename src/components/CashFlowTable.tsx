@@ -26,6 +26,7 @@ interface RowData {
   balance: number;
   cashBalance: number;
   investmentBalance: number;
+  assetBalances: { [name: string]: number };
   savings: number;
 }
 
@@ -225,6 +226,13 @@ export function CashFlowTable({ data, appData }: CashFlowTableProps) {
       const investmentBalance = Object.values(assetBalances).reduce((sum, val) => sum + val, 0);
       const savings = cashBalance + investmentBalance;
 
+      const currentAssetBalances: { [name: string]: number } = {};
+      appData.assets.forEach((asset) => {
+        if (assetBalances[asset.id] && assetBalances[asset.id] > 0) {
+          currentAssetBalances[asset.name] = Math.round(assetBalances[asset.id]);
+        }
+      });
+
       results.push({
         year,
         age,
@@ -244,6 +252,7 @@ export function CashFlowTable({ data, appData }: CashFlowTableProps) {
         balance: Math.round(balance),
         cashBalance: Math.round(cashBalance),
         investmentBalance: Math.round(investmentBalance),
+        assetBalances: currentAssetBalances,
         savings: Math.round(savings),
       });
     }
@@ -258,7 +267,7 @@ export function CashFlowTable({ data, appData }: CashFlowTableProps) {
   };
 
   const handleDownloadCSV = () => {
-    const headers = ['西暦', '年齢', ...appData.familyMembers.map((m) => m.name), '収入', '基本生活費', '教育費', '住居費', '保険料', 'イベント費用', '年間収支', '現金残高', '金融資産残高', '総資産残高'];
+    const headers = ['西暦', '年齢', ...appData.familyMembers.map((m) => m.name), '収入', '基本生活費', '教育費', '住居費', '保険料', 'イベント費用', '年間収支', '預金残高', '金融資産残高', '総資産残高'];
     const rows = detailedData.map((d) => [
       d.year,
       d.age,
@@ -464,7 +473,7 @@ export function CashFlowTable({ data, appData }: CashFlowTableProps) {
             </tr>
             <tr>
               <td className="px-3 py-2 text-gray-700 font-medium bg-gray-50 sticky left-0 z-10 border-r border-gray-300">
-                現金残高
+                預金残高
               </td>
               {detailedData.map((d, i) => (
                 <td key={i} className={`px-3 py-2 text-right whitespace-nowrap ${d.cashBalance < 0 ? 'text-red-600 font-bold' : ''}`}>
@@ -472,16 +481,7 @@ export function CashFlowTable({ data, appData }: CashFlowTableProps) {
                 </td>
               ))}
             </tr>
-            <tr>
-              <td className="px-3 py-2 text-gray-700 font-medium bg-gray-50 sticky left-0 z-10 border-r border-gray-300">
-                金融資産残高
-              </td>
-              {detailedData.map((d, i) => (
-                <td key={i} className="px-3 py-2 text-right whitespace-nowrap">
-                  {d.investmentBalance.toLocaleString()}
-                </td>
-              ))}
-            </tr>
+            {renderDetailRows('assets', detailedData.map((d) => d.assetBalances), '金融資産残高')}
             <tr className="bg-green-50">
               <td className="px-3 py-2 text-gray-700 font-bold bg-green-50 sticky left-0 z-10 border-r border-gray-300">
                 総資産残高
