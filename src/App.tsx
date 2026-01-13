@@ -491,221 +491,45 @@ function AppContent() {
     });
   };
 
-  const handleGenerateAdvice = () => {
+  const handleGenerateAdvice = async () => {
     setIsLoadingAdvice(true);
-    setTimeout(() => {
-      const safeNum = (val: number) => (isNaN(val) || !isFinite(val)) ? 0 : val;
+    setAdvice('');
 
-      const currentAge = appData.userSettings.birth_date
-        ? new Date().getFullYear() - new Date(appData.userSettings.birth_date).getFullYear()
-        : 30;
+    try {
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-fp-advice`;
+      const headers = {
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+      };
 
-      const simulationEndAge = appData.userSettings.simulation_end_age || 85;
-      const lifeExpectancy = appData.userSettings.life_expectancy || 85;
-      const retirementAge = 65;
-      const yearsToRetirement = Math.max(0, retirementAge - currentAge);
-      const retirementYears = Math.max(0, simulationEndAge - retirementAge);
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          lifePlanData: appData,
+          cashFlowData: cashFlowData,
+        }),
+      });
 
-      const totalAssets = safeNum(appData.userSettings.current_savings) +
-        appData.assets.reduce((sum, a) => sum + safeNum(a.current_value), 0) +
-        appData.realEstates.reduce((sum, r) => sum + safeNum(r.current_value), 0);
-
-      const yearlyAssetContribution = appData.assets.reduce((sum, a) => sum + safeNum(a.yearly_contribution), 0);
-      const yearlyIncome = appData.incomes.reduce((sum, i) => sum + safeNum(i.amount), 0);
-      const yearlyExpense = appData.expenses.reduce((sum, e) => sum + safeNum(e.amount), 0);
-      const yearlyInsuranceCost = appData.insurances.reduce((sum, i) => sum + safeNum(i.premium), 0);
-      const netYearlyCashFlow = yearlyIncome - yearlyExpense - yearlyInsuranceCost;
-
-      const yearlyPensionIncome = appData.pensions.reduce((sum, p) => sum + safeNum(p.amount), 0);
-      const retirementGap = yearlyExpense - yearlyPensionIncome;
-
-      const minBalance = Math.min(...cashFlowData.map(d => d.balance));
-      const balanceAtRetirement = cashFlowData.find(d => d.age === retirementAge)?.balance || 0;
-      const finalBalance = cashFlowData[cashFlowData.length - 1]?.balance || 0;
-
-      const hasNegativeBalance = minBalance < 0;
-
-      const educationCosts = appData.educationFunds.reduce((sum, e) => {
-        const years = safeNum(e.end_age) - safeNum(e.start_age);
-        return sum + (safeNum(e.amount) * years);
-      }, 0);
-
-      const lifeEventCosts = appData.lifeEvents.reduce((sum, e) => sum + safeNum(e.cost), 0);
-
-      const totalLoans = appData.loans.reduce((sum, l) => sum + safeNum(l.balance), 0);
-
-      let advice = `■ あなたの現状\n`;
-      advice += `現在${currentAge}歳、${simulationEndAge}歳までのシミュレーションを想定しています（想定寿命: ${lifeExpectancy}歳）。\n`;
-      advice += `退職までの期間: ${yearsToRetirement}年、退職後の期間: ${retirementYears}年\n\n`;
-
-      if (appData.goals.q1 || appData.goals.q2 || appData.goals.q3 || appData.goals.q4) {
-        advice += `■ あなたの目標・価値観\n`;
-        if (appData.goals.q1) advice += `・大切にしたいこと: ${appData.goals.q1}\n`;
-        if (appData.goals.q2) advice += `・避けたいリスク: ${appData.goals.q2}\n`;
-        if (appData.goals.q3) advice += `・優先したい支出: ${appData.goals.q3}\n`;
-        if (appData.goals.q4) advice += `・実現したい目標: ${appData.goals.q4}\n`;
-        advice += `\n`;
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      advice += `■ 資産状況の診断\n`;
-      advice += `現在の総資産: ${safeNum(totalAssets).toLocaleString()}万円\n`;
-      advice += `（内訳：預貯金${safeNum(appData.userSettings.current_savings)}万円、投資資産${appData.assets.reduce((s, a) => s + safeNum(a.current_value), 0)}万円、不動産${appData.realEstates.reduce((s, r) => s + safeNum(r.current_value), 0)}万円）\n\n`;
+      const data = await response.json();
 
-      if (totalAssets < yearlyExpense * 0.5 && yearlyExpense > 0) {
-        advice += `【警告】現在の資産額は年間支出の${safeNum(Math.round(totalAssets / yearlyExpense * 10) / 10)}年分しかありません。緊急予備資金として最低でも生活費の6ヶ月分（${Math.round(yearlyExpense / 2)}万円）を確保する必要があります。\n\n`;
-      }
-
-      advice += `■ 収支バランスの分析\n`;
-      advice += `年間収入: ${safeNum(yearlyIncome).toLocaleString()}万円\n`;
-      advice += `年間支出: ${safeNum(yearlyExpense).toLocaleString()}万円（保険料${safeNum(yearlyInsuranceCost)}万円含む）\n`;
-      advice += `年間収支: ${netYearlyCashFlow > 0 ? '+' : ''}${safeNum(netYearlyCashFlow).toLocaleString()}万円\n`;
-      advice += `貯蓄率: ${yearlyIncome > 0 ? safeNum(Math.round(netYearlyCashFlow / yearlyIncome * 100)) : 0}%\n\n`;
-
-      if (netYearlyCashFlow < 0) {
-        advice += `【重要】現在、年間収支がマイナスです。このままでは資産が減少し続けます。支出の見直しまたは収入の増加が急務です。\n\n`;
-      } else if (netYearlyCashFlow < yearlyIncome * 0.1) {
-        advice += `【注意】貯蓄率が低い状態です。理想的には収入の20%以上を貯蓄・投資に回すことをお勧めします。\n\n`;
-      }
-
-      if (educationCosts > 0) {
-        advice += `教育資金の予定: ${safeNum(educationCosts).toLocaleString()}万円\n`;
-      }
-      if (lifeEventCosts > 0) {
-        advice += `ライフイベント費用: ${safeNum(lifeEventCosts).toLocaleString()}万円\n`;
-      }
-      if (totalLoans > 0) {
-        advice += `借入残高: ${safeNum(totalLoans).toLocaleString()}万円\n`;
-      }
-      if (educationCosts > 0 || lifeEventCosts > 0 || totalLoans > 0) {
-        advice += `\n`;
-      }
-
-      advice += `■ 老後資金の見通し\n`;
-      advice += `${retirementAge}歳時点の予想資産: ${safeNum(balanceAtRetirement).toLocaleString()}万円\n`;
-      advice += `年金収入（見込み）: 年間${safeNum(yearlyPensionIncome).toLocaleString()}万円\n`;
-      advice += `退職後の年間支出: ${safeNum(yearlyExpense).toLocaleString()}万円\n`;
-      advice += `年金との差額: ${retirementGap > 0 ? '不足' : '余裕'}${safeNum(Math.abs(retirementGap)).toLocaleString()}万円/年\n\n`;
-
-      if (retirementGap > 0) {
-        const requiredRetirementAssets = retirementGap * retirementYears;
-        advice += `【重要分析】退職後${retirementYears}年間で必要な資産: ${safeNum(requiredRetirementAssets).toLocaleString()}万円\n`;
-
-        if (balanceAtRetirement < requiredRetirementAssets) {
-          const shortfall = requiredRetirementAssets - balanceAtRetirement;
-          advice += `現状では${safeNum(shortfall).toLocaleString()}万円不足する見込みです。\n`;
-
-          if (yearsToRetirement > 0) {
-            const monthlyRequired = Math.ceil(shortfall / yearsToRetirement / 12);
-            advice += `退職までに不足分を補うには、月々${safeNum(monthlyRequired).toLocaleString()}万円（年${safeNum(monthlyRequired * 12)}万円）の追加貯蓄が必要です。\n\n`;
-          } else {
-            advice += `既に退職年齢に達しているため、支出の削減または年金の繰下げ受給を検討すべきです。\n\n`;
-          }
-        } else {
-          advice += `現状のプランでは老後資金は確保できる見込みです。\n\n`;
-        }
-      }
-
-      advice += `■ シミュレーション結果\n`;
-      advice += `${simulationEndAge}歳時点の予想資産: ${safeNum(finalBalance).toLocaleString()}万円\n`;
-
-      if (hasNegativeBalance) {
-        const firstNegativeAge = cashFlowData.find(d => d.balance < 0)?.age;
-        advice += `\n【警告】${firstNegativeAge || ''}歳頃に資産が底をつく可能性があります。\n`;
-        advice += `このままでは生活が維持できません。早急な対策が必要です。\n\n`;
-      } else if (finalBalance < 0) {
-        advice += `\n【警告】現在のプランでは晩年に資金不足が予想されます。\n\n`;
-      } else if (finalBalance < 500) {
-        advice += `\n【注意】人生後半の資金に余裕がありません。医療費や介護費用を考慮すると不安が残ります。\n\n`;
-      }
-
-      advice += `■ リスク管理の評価\n`;
-
-      if (appData.insurances.length === 0) {
-        advice += `【要改善】保険による備えがありません。万が一の事態に家族が困窮する可能性があります。\n`;
-        if (appData.familyMembers.filter(m => m.relation !== 'self').length > 0) {
-          advice += `特に扶養家族がいる場合、死亡保障は必須です。\n`;
-        }
+      if (data.advice) {
+        setAdvice(data.advice);
+      } else if (data.error) {
+        setAdvice(`エラーが発生しました: ${data.error}\n\nGemini APIキーが正しく設定されているか確認してください。`);
       } else {
-        const totalInsurancePremium = yearlyInsuranceCost * 10;
-        advice += `年間保険料: ${safeNum(yearlyInsuranceCost)}万円（10年で${safeNum(totalInsurancePremium)}万円）\n`;
-        if (yearlyInsuranceCost > yearlyIncome * 0.1) {
-          advice += `【注意】保険料が収入の10%を超えています。保障内容を見直し、無駄な保険がないか確認してください。\n`;
-        }
+        setAdvice('アドバイスの生成に失敗しました。しばらく経ってから再度お試しください。');
       }
-      advice += `\n`;
-
-      const investmentAssets = appData.assets.reduce((s, a) => s + safeNum(a.current_value), 0);
-      const investmentRatio = totalAssets > 0 ? (investmentAssets / totalAssets) * 100 : 0;
-
-      advice += `投資資産比率: ${safeNum(Math.round(investmentRatio))}%\n`;
-      if (yearsToRetirement > 10 && investmentRatio < 20) {
-        advice += `【推奨】退職まで${yearsToRetirement}年あります。インフレに負けないよう、資産の一部を投資運用することをお勧めします。\n`;
-      } else if (yearsToRetirement < 5 && investmentRatio > 50) {
-        advice += `【注意】退職が近づいています。リスク資産の比率を徐々に下げ、安定資産へシフトすることを検討してください。\n`;
-      }
-      advice += `\n`;
-
-      advice += `■ AIからの具体的アドバイス\n\n`;
-
-      if (hasNegativeBalance || finalBalance < 0) {
-        advice += `【最優先】資金ショートのリスクがあります。以下の対策を直ちに実行してください：\n`;
-        advice += `1. 固定費の徹底的な見直し（通信費、保険料、サブスクなど）\n`;
-        advice += `2. 副業や転職による収入増加の検討\n`;
-        advice += `3. ライフイベントの優先順位付けと延期の検討\n`;
-        advice += `4. 退職年齢の延長（${retirementAge + 3}歳まで働くと状況が改善される可能性）\n\n`;
-      }
-
-      if (netYearlyCashFlow > 0 && yearsToRetirement > 5) {
-        advice += `【資産形成】\n`;
-        const availableForInvestment = netYearlyCashFlow - yearlyAssetContribution;
-        if (availableForInvestment > 50) {
-          advice += `・年間${safeNum(netYearlyCashFlow)}万円の余剰資金のうち、${safeNum(Math.floor(availableForInvestment * 0.7))}万円程度をNISA・iDeCoなどの税制優遇制度で積立投資\n`;
-        }
-        advice += `・緊急予備資金（生活費の6ヶ月分）は定期預金で確保\n`;
-        advice += `・住宅購入や教育資金など10年以内に使う資金は安全資産で運用\n\n`;
-      }
-
-      if (retirementGap > 0) {
-        advice += `【老後対策】\n`;
-        advice += `・公的年金の繰下げ受給を検討（70歳まで繰下げで42%増額）\n`;
-        advice += `・退職後も健康なうちは軽い仕事を続け、収入の柱を確保\n`;
-        advice += `・退職前に住居費の固定化（持ち家の場合はローン完済、賃貸の場合は住み替え検討）\n\n`;
-      }
-
-      if (appData.familyMembers.length > 1) {
-        advice += `【家族全体で考える】\n`;
-        advice += `・配偶者の就労による世帯収入の増加\n`;
-        advice += `・子どもの教育資金は奨学金や教育ローンの活用も視野に\n`;
-        advice += `・親の介護資金も考慮し、実家の資産状況を把握しておく\n\n`;
-      }
-
-      advice += `【定期的な見直し】\n`;
-      advice += `・年1回は必ずライフプランを見直してください\n`;
-      advice += `・収入や支出が変わったらすぐにシミュレーションし直す\n`;
-      advice += `・想定外の出来事が起きても慌てず、柔軟に計画を修正する\n\n`;
-
-      advice += `━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
-
-      if (appData.goals.q4) {
-        advice += `あなたの「${appData.goals.q4}」という目標、素晴らしいと思います。\n`;
-      }
-
-      if (hasNegativeBalance) {
-        advice += `\n現実は厳しいですが、今気づけたことが幸運です。まだ間に合います。\n`;
-        advice += `一歩ずつ、確実に改善していきましょう。\n`;
-      } else if (finalBalance < 1000) {
-        advice += `\n現状では老後資金に不安が残りますが、今から対策を打てば十分に改善できます。\n`;
-        advice += `焦らず、できることから始めていきましょう。\n`;
-      } else {
-        advice += `\n現状のプランは概ね良好です。この調子で計画的に進めていけば、安心した人生を送れるでしょう。\n`;
-      }
-
-      advice += `\nお金は人生を豊かにする手段です。数字に振り回されず、あなたらしい人生を歩んでください。\n`;
-      advice += `\n※ このアドバイスはシミュレーション結果に基づく一般的な提案です。個別具体的な金融商品の選択や詳細なプランニングについては、専門のファイナンシャルプランナーにご相談されることをお勧めします。`;
-
-      setAdvice(advice);
+    } catch (error) {
+      console.error('Error generating advice:', error);
+      setAdvice('ネットワークエラーが発生しました。インターネット接続を確認し、再度お試しください。');
+    } finally {
       setIsLoadingAdvice(false);
-    }, 2000);
+    }
   };
 
   if (showDashboard && user) {

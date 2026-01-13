@@ -17,6 +17,17 @@
 - **権限管理**: 閲覧のみまたは編集可能の権限を設定できます
 - **招待メール**: 共有時に招待メールが自動送信されます（Resend API設定時）
 
+### AI相談機能（Gemini API）
+- **CFPレベルのアドバイス**: Google Gemini API（最新版）を使用して、FP協会が提唱する6分野に基づいた専門的なライフプラン診断を提供します
+- **環境変数設定**: 本機能を有効にするには、Supabase Edge Functionsに`GEMINI_API_KEY`環境変数を設定する必要があります
+
+#### Gemini APIキーの設定手順
+1. [Google AI Studio](https://aistudio.google.com/app/apikey)にアクセスし、Gemini APIキーを取得
+2. Supabaseダッシュボードにログイン
+3. プロジェクト設定 > Edge Functions > Secrets に移動
+4. 新しいシークレット`GEMINI_API_KEY`を作成し、取得したAPIキーを設定
+5. Edge Function `generate-fp-advice` を再デプロイ（自動で有効化されます）
+
 ## 現在の実装状況
 
 ### 基本機能
