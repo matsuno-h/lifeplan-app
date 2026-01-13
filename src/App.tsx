@@ -15,6 +15,7 @@ import { ShareSettingsTab } from './components/tabs/ShareSettingsTab';
 import { PlanDashboard } from './components/PlanDashboard';
 import { AssetChart } from './components/AssetChart';
 import { CashFlowTable } from './components/CashFlowTable';
+import { LoanBalanceTable } from './components/LoanBalanceTable';
 import { AppData } from './types';
 import { calculateCashFlow } from './utils/simulator';
 
@@ -877,6 +878,7 @@ function AppContent() {
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-xl font-bold mb-4 text-gray-700">キャッシュフロー表</h2>
               <CashFlowTable data={cashFlowData} appData={appData} />
+              <LoanBalanceTable appData={appData} />
             </div>
           </div>
         </div>
