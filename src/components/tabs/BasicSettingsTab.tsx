@@ -86,13 +86,13 @@ export function BasicSettingsTab({
         </h2>
         <form onSubmit={handleSettingsSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">お名前</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">識別名（本名以外）</label>
             <input
               type="text"
               name="user_name"
               value={formSettings.user_name}
               onChange={(e) => setFormSettings({ ...formSettings, user_name: e.target.value })}
-              placeholder="例: 山田 太郎"
+              placeholder="例: 父"
               className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2 text-sm"
               required
             />
@@ -186,11 +186,11 @@ export function BasicSettingsTab({
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">名前</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">識別名（本名以外）</label>
                 <input
                   type="text"
                   name="family_name"
-                  placeholder="例: 花子"
+                  placeholder="例: 母、長男"
                   className="w-full rounded-md border-gray-300 border p-2 text-sm"
                   required
                 />
