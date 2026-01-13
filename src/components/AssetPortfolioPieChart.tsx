@@ -48,8 +48,28 @@ export function AssetPortfolioPieChart({ appData }: AssetPortfolioPieChartProps)
 
     const yearsFromNow = age - currentAge;
     let cashBalance = appData.userSettings.current_savings || 0;
+    const savingsInterestRate = (appData.userSettings.savings_interest_rate || 0) / 100;
 
     const assetTypeBalances: { [type: string]: number } = {};
+
+    for (let i = 0; i < yearsFromNow; i++) {
+      const ageAtCalc = currentAge + i;
+
+      appData.assets.forEach((asset) => {
+        const shouldContribute = !asset.withdrawal_age || ageAtCalc < asset.withdrawal_age;
+        const belowEndAge = !asset.contribution_end_age || ageAtCalc <= asset.contribution_end_age;
+
+        if (shouldContribute && belowEndAge && asset.yearly_contribution > 0) {
+          cashBalance -= asset.yearly_contribution;
+        }
+
+        if (asset.withdrawal_age && ageAtCalc >= asset.withdrawal_age && asset.withdrawal_amount) {
+          cashBalance += asset.withdrawal_amount;
+        }
+      });
+
+      cashBalance = cashBalance * (1 + savingsInterestRate);
+    }
 
     appData.assets.forEach((asset) => {
       let balance = asset.current_value;
@@ -63,13 +83,11 @@ export function AssetPortfolioPieChart({ appData }: AssetPortfolioPieChartProps)
 
         if (shouldContribute && belowEndAge && asset.yearly_contribution > 0) {
           balance += asset.yearly_contribution;
-          cashBalance -= asset.yearly_contribution;
         }
 
         if (asset.withdrawal_age && ageAtCalc >= asset.withdrawal_age && asset.withdrawal_amount) {
           const withdrawal = Math.min(asset.withdrawal_amount, balance);
           balance -= withdrawal;
-          cashBalance += withdrawal;
         }
       }
 

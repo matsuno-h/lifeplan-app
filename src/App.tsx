@@ -28,6 +28,7 @@ const initialData: AppData = {
     life_expectancy: 85,
     simulation_end_age: 85,
     current_savings: 300,
+    savings_interest_rate: 0,
   },
   incomes: [],
   expenses: [],
@@ -836,6 +837,12 @@ function AppContent() {
                 onDelete={handleDelete}
                 onReorder={handleReorder}
                 appData={appData}
+                onSavingsUpdate={(updates) => {
+                  setAppData((prev) => ({
+                    ...prev,
+                    userSettings: { ...prev.userSettings, ...updates },
+                  }));
+                }}
               />
             )}
 

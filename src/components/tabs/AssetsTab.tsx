@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { Coins, Building2, Trash2, Edit2, ChevronUp, ChevronDown } from 'lucide-react';
-import { Asset, RealEstate, AppData } from '../../types';
+import { useState, useEffect } from 'react';
+import { Coins, Building2, Trash2, Edit2, ChevronUp, ChevronDown, Wallet } from 'lucide-react';
+import { Asset, RealEstate, AppData, UserSettings } from '../../types';
 import { AssetPortfolioPieChart } from '../AssetPortfolioPieChart';
 
 interface AssetsTabProps {
@@ -13,6 +13,7 @@ interface AssetsTabProps {
   onDelete: (id: string, type: 'asset' | 'realEstate') => void;
   onReorder: (id: string, type: string, direction: 'up' | 'down') => void;
   appData: AppData;
+  onSavingsUpdate: (settings: Partial<UserSettings>) => void;
 }
 
 export function AssetsTab({
@@ -25,9 +26,25 @@ export function AssetsTab({
   onDelete,
   onReorder,
   appData,
+  onSavingsUpdate,
 }: AssetsTabProps) {
   const [editingAssetId, setEditingAssetId] = useState<string | null>(null);
   const [editingRealEstateId, setEditingRealEstateId] = useState<string | null>(null);
+  const [savingsAmount, setSavingsAmount] = useState(appData.userSettings.current_savings);
+  const [savingsRate, setSavingsRate] = useState(appData.userSettings.savings_interest_rate || 0);
+
+  useEffect(() => {
+    setSavingsAmount(appData.userSettings.current_savings);
+    setSavingsRate(appData.userSettings.savings_interest_rate || 0);
+  }, [appData.userSettings.current_savings, appData.userSettings.savings_interest_rate]);
+
+  const handleSavingsSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    onSavingsUpdate({
+      current_savings: savingsAmount,
+      savings_interest_rate: savingsRate,
+    });
+  };
 
   const handleAssetSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -116,6 +133,53 @@ export function AssetsTab({
   return (
     <div className="space-y-6">
       <AssetPortfolioPieChart appData={appData} />
+
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <h2 className="text-xl font-bold mb-4 border-b pb-2 text-gray-700 flex items-center">
+          <Wallet className="mr-2 h-5 w-5" />
+          現在の預貯金 (現金)
+        </h2>
+        <form onSubmit={handleSavingsSubmit} className="space-y-3">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">預貯金額</label>
+              <div className="flex items-center">
+                <input
+                  type="number"
+                  value={savingsAmount}
+                  onChange={(e) => setSavingsAmount(parseInt(e.target.value) || 0)}
+                  placeholder="300"
+                  className="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm"
+                  required
+                  min="0"
+                />
+                <span className="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">金利 (年利)</label>
+              <div className="flex items-center">
+                <input
+                  type="number"
+                  value={savingsRate}
+                  onChange={(e) => setSavingsRate(parseFloat(e.target.value) || 0)}
+                  placeholder="0.1"
+                  step="0.01"
+                  className="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm"
+                  min="0"
+                />
+                <span className="ml-2 text-gray-500 text-sm whitespace-nowrap">%</span>
+              </div>
+            </div>
+          </div>
+          <button
+            type="submit"
+            className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-1.5 rounded text-sm"
+          >
+            保存
+          </button>
+        </form>
+      </div>
 
       <div className="bg-white rounded-lg shadow-md p-6">
         <h2 className="text-xl font-bold mb-4 border-b pb-2 text-gray-700 flex items-center">

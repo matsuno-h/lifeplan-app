@@ -22,6 +22,7 @@ export function calculateCashFlow(data: AppData): CashFlowData[] {
   const endAge = data.userSettings.simulation_end_age || 85;
 
   let cashBalance = safeNum(data.userSettings.current_savings);
+  const savingsInterestRate = safeNum(data.userSettings.savings_interest_rate) / 100;
 
   const assetBalances: { [key: string]: number } = {};
   data.assets.forEach((asset) => {
@@ -166,6 +167,7 @@ export function calculateCashFlow(data: AppData): CashFlowData[] {
 
     const netCashFlow = yearlyIncome - yearlyExpense - totalInvestmentContribution + totalInvestmentWithdrawal;
     cashBalance += netCashFlow;
+    cashBalance = cashBalance * (1 + savingsInterestRate);
 
     const totalAssetValue = Object.values(assetBalances).reduce((sum, val) => sum + val, 0);
     const totalBalance = cashBalance + totalAssetValue;

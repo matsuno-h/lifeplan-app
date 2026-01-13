@@ -94,6 +94,9 @@ export function useSupabaseData(initialData: AppData, options?: UseSupabaseDataO
       if (localData) {
         try {
           const parsedData = JSON.parse(localData);
+          if (parsedData.userSettings.savings_interest_rate === undefined) {
+            parsedData.userSettings.savings_interest_rate = 0;
+          }
           setData(parsedData);
         } catch (e) {
           console.error('Error parsing local data:', e);
@@ -118,7 +121,11 @@ export function useSupabaseData(initialData: AppData, options?: UseSupabaseDataO
         }
 
         if (planData) {
-          setData(planData.plan_data as AppData);
+          const loadedData = planData.plan_data as AppData;
+          if (loadedData.userSettings.savings_interest_rate === undefined) {
+            loadedData.userSettings.savings_interest_rate = 0;
+          }
+          setData(loadedData);
           setCurrentPlanId(planData.id);
           setCurrentPlanNumber(planData.plan_number);
           setIsOwner(planData.user_id === user.id);
@@ -139,7 +146,11 @@ export function useSupabaseData(initialData: AppData, options?: UseSupabaseDataO
         }
 
         if (planData) {
-          setData(planData.plan_data as AppData);
+          const loadedData = planData.plan_data as AppData;
+          if (loadedData.userSettings.savings_interest_rate === undefined) {
+            loadedData.userSettings.savings_interest_rate = 0;
+          }
+          setData(loadedData);
           setCurrentPlanId(planData.id);
           setCurrentPlanNumber(planData.plan_number);
           setIsOwner(true);

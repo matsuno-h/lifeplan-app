@@ -168,24 +168,6 @@ export function BasicSettingsTab({
               <span className="ml-2 text-gray-500 text-sm whitespace-nowrap">歳</span>
             </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              現在の預貯金 (現金) <span className="text-xs text-red-500 font-normal">※投資資産は含めない</span>
-            </label>
-            <div className="flex items-center">
-              <input
-                type="number"
-                name="current_savings"
-                value={formSettings.current_savings}
-                onChange={(e) => setFormSettings({ ...formSettings, current_savings: parseInt(e.target.value) || 0 })}
-                placeholder="300"
-                className="flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2 text-sm"
-                required
-                min="0"
-              />
-              <span className="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
-            </div>
-          </div>
           <button
             type="submit"
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-200 text-sm"

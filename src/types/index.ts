@@ -6,6 +6,7 @@ export interface UserSettings {
   life_expectancy: number;
   simulation_end_age: number;
   current_savings: number;
+  savings_interest_rate: number;
 }
 
 export interface Income {
