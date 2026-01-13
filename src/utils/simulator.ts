@@ -137,7 +137,6 @@ export function calculateCashFlow(data: AppData): CashFlowData[] {
       const purchaseAge = property.purchase_age || calculatePurchaseAge(property.purchase_date, data.userSettings.birth_date, currentAge, currentYear);
 
       if (age === purchaseAge) {
-        yearlyExpense += safeNum(property.purchase_price);
         if (property.initial_cost) yearlyExpense += safeNum(property.initial_cost);
       }
 
