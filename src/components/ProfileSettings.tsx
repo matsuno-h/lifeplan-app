@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { User, Mail, Lock, Save, Loader2, AlertCircle, Check, X } from 'lucide-react';
+import { User, Mail, Lock, Save, Loader2, AlertCircle, Check, X, Trash2 } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -15,6 +15,8 @@ export function ProfileSettings({ onClose }: ProfileSettingsProps) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -110,6 +112,44 @@ export function ProfileSettings({ onClose }: ProfileSettingsProps) {
       setError('プロフィールの更新に失敗しました');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!user || !isSupabaseConfigured || !supabase) return;
+
+    setDeleting(true);
+    setError('');
+
+    try {
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-account`;
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No active session');
+      }
+
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to delete account');
+      }
+
+      await supabase.auth.signOut();
+      window.location.href = '/';
+    } catch (err: unknown) {
+      console.error('Error deleting account:', err);
+      setError('アカウントの削除に失敗しました');
+      setDeleting(false);
+      setShowDeleteConfirm(false);
     }
   };
 
@@ -250,6 +290,59 @@ export function ProfileSettings({ onClose }: ProfileSettingsProps) {
             </button>
           </div>
         </form>
+
+        <div className="border-t mt-6 pt-6">
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="text-red-600 hover:text-red-700 text-sm font-medium transition-colors flex items-center gap-1"
+          >
+            <Trash2 className="w-4 h-4" />
+            アカウントを削除する
+          </button>
+        </div>
+
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
+            <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <AlertCircle className="w-6 h-6 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    本当にアカウントを削除しますか?
+                  </h3>
+                </div>
+              </div>
+              <p className="text-sm text-gray-600 mb-6">
+                この操作は取り消せません。すべてのライフプランと関連データが完全に削除されます。
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  disabled={deleting}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
+                >
+                  いいえ
+                </button>
+                <button
+                  onClick={handleDeleteAccount}
+                  disabled={deleting}
+                  className="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {deleting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      削除中...
+                    </>
+                  ) : (
+                    'はい'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
