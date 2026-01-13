@@ -835,6 +835,7 @@ function AppContent() {
                 onRealEstateEdit={handleRealEstateEdit}
                 onDelete={handleDelete}
                 onReorder={handleReorder}
+                appData={appData}
               />
             )}
 

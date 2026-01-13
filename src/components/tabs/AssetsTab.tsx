@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Coins, Building2, Trash2, Edit2, ChevronUp, ChevronDown } from 'lucide-react';
-import { Asset, RealEstate } from '../../types';
+import { Asset, RealEstate, AppData } from '../../types';
+import { AssetPortfolioPieChart } from '../AssetPortfolioPieChart';
 
 interface AssetsTabProps {
   assets: Asset[];
@@ -11,6 +12,7 @@ interface AssetsTabProps {
   onRealEstateEdit: (id: string, updates: Partial<RealEstate>) => void;
   onDelete: (id: string, type: 'asset' | 'realEstate') => void;
   onReorder: (id: string, type: string, direction: 'up' | 'down') => void;
+  appData: AppData;
 }
 
 export function AssetsTab({
@@ -22,6 +24,7 @@ export function AssetsTab({
   onRealEstateEdit,
   onDelete,
   onReorder,
+  appData,
 }: AssetsTabProps) {
   const [editingAssetId, setEditingAssetId] = useState<string | null>(null);
   const [editingRealEstateId, setEditingRealEstateId] = useState<string | null>(null);
@@ -112,6 +115,8 @@ export function AssetsTab({
 
   return (
     <div className="space-y-6">
+      <AssetPortfolioPieChart appData={appData} />
+
       <div className="bg-white rounded-lg shadow-md p-6">
         <h2 className="text-xl font-bold mb-4 border-b pb-2 text-gray-700 flex items-center">
           <Coins className="mr-2 h-5 w-5" />
