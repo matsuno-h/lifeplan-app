@@ -49,15 +49,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signUpWithEmail = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
-    if (error) {
-      console.error('Error signing up:', error);
-      return { error: error.message };
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: window.location.origin,
+        },
+      });
+
+      console.log('SignUp response:', { data, error });
+
+      if (error) {
+        console.error('Error signing up:', error);
+        return { error: error.message };
+      }
+
+      if (data?.user && !data.session) {
+        console.log('User registered but email confirmation required');
+        return { error: 'メール確認が必要です。登録したメールアドレスに送信された確認リンクをクリックしてください。' };
+      }
+
+      console.log('User successfully registered with session');
+      return { error: null };
+    } catch (err) {
+      console.error('Unexpected error during signup:', err);
+      return { error: '登録中にエラーが発生しました。もう一度お試しください。' };
     }
-    return { error: null };
   };
 
   const signOut = async () => {

@@ -11,10 +11,12 @@ export function LoginPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setSuccess(null);
 
     if (!email || !password) {
       setError('メールアドレスとパスワードを入力してください');
@@ -42,9 +44,13 @@ export function LoginPage() {
           setError('メールアドレスまたはパスワードが正しくありません');
         } else if (result.error.includes('User already registered')) {
           setError('このメールアドレスは既に登録されています');
+        } else if (result.error.includes('メール確認が必要です')) {
+          setSuccess(result.error);
         } else {
           setError(result.error);
         }
+      } else if (isSignUp) {
+        setSuccess('アカウントが作成されました。ログインしています...');
       }
     } catch (err) {
       console.error('Auth error:', err);
@@ -133,6 +139,12 @@ export function LoginPage() {
             </div>
           )}
 
+          {success && (
+            <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-green-600 text-sm">
+              {success}
+            </div>
+          )}
+
           <button
             type="submit"
             disabled={isLoading}
@@ -149,6 +161,7 @@ export function LoginPage() {
               onClick={() => {
                 setIsSignUp(!isSignUp);
                 setError(null);
+                setSuccess(null);
                 setConfirmPassword('');
               }}
               className="text-blue-600 hover:text-blue-700 text-sm font-medium"
