@@ -216,6 +216,57 @@ export function useSupabaseData(initialData: AppData, options?: UseSupabaseDataO
     });
   }, []);
 
+  const saveAiAdvice = useCallback(async (advice: string) => {
+    if (!user || !isSupabaseConfigured || !supabase || !currentPlanId) {
+      console.warn('Cannot save AI advice: missing prerequisites');
+      return false;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('user_life_plans')
+        .update({
+          ai_advice: advice,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', currentPlanId);
+
+      if (error) {
+        console.error('Error saving AI advice:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error in saveAiAdvice:', error);
+      return false;
+    }
+  }, [user, currentPlanId]);
+
+  const loadAiAdvice = useCallback(async (): Promise<string | null> => {
+    if (!user || !isSupabaseConfigured || !supabase || !currentPlanId) {
+      return null;
+    }
+
+    try {
+      const { data: planData, error } = await supabase
+        .from('user_life_plans')
+        .select('ai_advice')
+        .eq('id', currentPlanId)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error loading AI advice:', error);
+        return null;
+      }
+
+      return planData?.ai_advice || null;
+    } catch (error) {
+      console.error('Error in loadAiAdvice:', error);
+      return null;
+    }
+  }, [user, currentPlanId]);
+
   return {
     data,
     setData: updateData,
@@ -226,5 +277,7 @@ export function useSupabaseData(initialData: AppData, options?: UseSupabaseDataO
     planNumber: currentPlanNumber,
     isOwner,
     canEdit,
+    saveAiAdvice,
+    loadAiAdvice,
   };
 }

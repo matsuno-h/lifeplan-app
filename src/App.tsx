@@ -74,6 +74,8 @@ function AppContent() {
     planNumber,
     isOwner,
     canEdit,
+    saveAiAdvice,
+    loadAiAdvice,
   } = useSupabaseData(initialData, selectedPlan ? {
     planId: selectedPlan.planId,
     permission: selectedPlan.permission,
@@ -87,17 +89,32 @@ function AppContent() {
   const handleSelectPlan = (planId: string, isOwner: boolean, permission: 'view' | 'edit' | 'owner') => {
     setSelectedPlan({ planId, isOwner, permission });
     setShowDashboard(false);
+    setAdvice('');
   };
 
   const handleCreateNew = () => {
     setSelectedPlan(null);
     setShowDashboard(false);
+    setAdvice('');
   };
 
   const handleBackToDashboard = () => {
     setShowDashboard(true);
     setSelectedPlan(null);
+    setAdvice('');
   };
+
+  useEffect(() => {
+    const loadSavedAdvice = async () => {
+      if (planId && !dataLoading) {
+        const savedAdvice = await loadAiAdvice();
+        if (savedAdvice) {
+          setAdvice(savedAdvice);
+        }
+      }
+    };
+    loadSavedAdvice();
+  }, [planId, dataLoading, loadAiAdvice]);
 
   const cashFlowData = useMemo(() => {
     if (!appData || dataLoading) return [];
@@ -519,14 +536,18 @@ function AppContent() {
 
       if (data.advice) {
         setAdvice(data.advice);
+        await saveAiAdvice(data.advice);
       } else if (data.error) {
-        setAdvice(`エラーが発生しました: ${data.error}\n\nGemini APIキーが正しく設定されているか確認してください。`);
+        const errorMessage = `エラーが発生しました: ${data.error}\n\nGemini APIキーが正しく設定されているか確認してください。`;
+        setAdvice(errorMessage);
       } else {
-        setAdvice('アドバイスの生成に失敗しました。しばらく経ってから再度お試しください。');
+        const fallbackMessage = 'アドバイスの生成に失敗しました。しばらく経ってから再度お試しください。';
+        setAdvice(fallbackMessage);
       }
     } catch (error) {
       console.error('Error generating advice:', error);
-      setAdvice('ネットワークエラーが発生しました。インターネット接続を確認し、再度お試しください。');
+      const networkError = 'ネットワークエラーが発生しました。インターネット接続を確認し、再度お試しください。';
+      setAdvice(networkError);
     } finally {
       setIsLoadingAdvice(false);
     }
