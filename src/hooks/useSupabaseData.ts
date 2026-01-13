@@ -160,9 +160,17 @@ export function useSupabaseData(initialData: AppData, options?: UseSupabaseDataO
     });
   }, [saveDataToSupabase, canEdit]);
 
+  const setDataWithoutSave = useCallback((updaterOrData: ((prev: AppData) => AppData) | AppData) => {
+    setData((prev) => {
+      const newData = typeof updaterOrData === 'function' ? updaterOrData(prev) : updaterOrData;
+      return newData;
+    });
+  }, []);
+
   return {
     data,
     setData: updateData,
+    setDataWithoutSave,
     loading,
     saveStatus,
     planId: currentPlanId,

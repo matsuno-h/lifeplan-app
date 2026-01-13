@@ -64,6 +64,7 @@ function AppContent() {
   const {
     data: appData,
     setData: setAppData,
+    setDataWithoutSave,
     loading: dataLoading,
     saveStatus: dataSaveStatus,
     planId,
@@ -175,7 +176,8 @@ function AppContent() {
           },
         };
 
-        setAppData(validatedData);
+        setDataWithoutSave(validatedData);
+        alert('データを読み込みました');
       } catch (error) {
         alert('ファイルの読み込みに失敗しました');
         console.error(error);
