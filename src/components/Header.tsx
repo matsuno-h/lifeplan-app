@@ -1,7 +1,6 @@
 import { Upload, Download, Trash2, TrendingUp, LogOut, User, LogIn, X, LayoutGrid } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useState } from 'react';
-import { PlanSelector } from './PlanSelector';
 
 interface HeaderProps {
   onExport: () => void;
@@ -9,10 +8,9 @@ interface HeaderProps {
   onClear: () => void;
   onShowDashboard?: () => void;
   currentPlanNumber?: number;
-  onSelectPlan?: (planNumber: number) => void;
 }
 
-export function Header({ onExport, onImport, onClear, onShowDashboard, currentPlanNumber, onSelectPlan }: HeaderProps) {
+export function Header({ onExport, onImport, onClear, onShowDashboard, currentPlanNumber }: HeaderProps) {
   const { user, signOut, signInWithEmail, signUpWithEmail } = useAuth();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
@@ -76,12 +74,6 @@ export function Header({ onExport, onImport, onClear, onShowDashboard, currentPl
           <div className="flex-1 flex justify-end items-start gap-2">
             {user ? (
               <>
-                {currentPlanNumber && onSelectPlan && (
-                  <PlanSelector
-                    currentPlanNumber={currentPlanNumber}
-                    onSelectPlan={onSelectPlan}
-                  />
-                )}
                 {onShowDashboard && (
                   <button
                     onClick={onShowDashboard}

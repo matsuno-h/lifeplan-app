@@ -60,7 +60,6 @@ function AppContent() {
   const { user, loading: authLoading } = useAuth();
   const [showDashboard, setShowDashboard] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<SelectedPlanInfo | null>(null);
-  const [currentPlanNumber, setCurrentPlanNumber] = useState(1);
 
   const {
     data: appData,
@@ -75,8 +74,6 @@ function AppContent() {
   } = useSupabaseData(initialData, selectedPlan ? {
     planId: selectedPlan.planId,
     permission: selectedPlan.permission,
-  } : user ? {
-    planNumber: currentPlanNumber,
   } : undefined);
 
   const [activeTab, setActiveTab] = useState('goals');
@@ -96,12 +93,6 @@ function AppContent() {
   const handleBackToDashboard = () => {
     setShowDashboard(true);
     setSelectedPlan(null);
-  };
-
-  const handlePlanNumberChange = (newPlanNumber: number) => {
-    if (confirm(`プラン${newPlanNumber}に切り替えますか？未保存の変更は失われます。`)) {
-      setCurrentPlanNumber(newPlanNumber);
-    }
   };
 
   const cashFlowData = useMemo(() => {
@@ -731,7 +722,6 @@ function AppContent() {
           onClear={handleClear}
           onShowDashboard={user ? handleBackToDashboard : undefined}
           currentPlanNumber={user && !selectedPlan ? planNumber : undefined}
-          onSelectPlan={user && !selectedPlan ? handlePlanNumberChange : undefined}
         />
 
         {!user && (
