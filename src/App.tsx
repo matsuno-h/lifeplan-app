@@ -874,12 +874,10 @@ function AppContent() {
 
           <div className="lg:col-span-8 space-y-6">
             <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-bold mb-4 text-gray-700">資産推移シミュレーション</h2>
               <AssetChart data={cashFlowData} />
             </div>
 
             <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-bold mb-4 text-gray-700">キャッシュフロー表</h2>
               <CashFlowTable data={cashFlowData} appData={appData} />
               <LoanBalanceTable appData={appData} />
             </div>
