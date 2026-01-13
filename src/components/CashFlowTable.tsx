@@ -287,20 +287,22 @@ export function CashFlowTable({ data, appData }: CashFlowTableProps) {
     const yearRow = ['西暦', ...detailedData.map(d => d.year.toString())];
     csvRows.push(yearRow.join(','));
 
-    csvRows.push('家族情報');
-
     const userAgeRow = [`${appData.userSettings.user_name || '本人'} (本人)`, ...detailedData.map(d => `${d.age}歳`)];
     csvRows.push(userAgeRow.join(','));
 
-    appData.familyMembers
-      .filter(member => member.relation !== 'self')
-      .forEach(member => {
+    const otherFamilyMembers = appData.familyMembers.filter(member => member.relation !== 'self');
+    if (otherFamilyMembers.length > 0) {
+      csvRows.push('');
+      csvRows.push('家族情報');
+
+      otherFamilyMembers.forEach(member => {
         const memberRow = [
           `${member.name} (${getRelationLabel(member.relation)})`,
           ...detailedData.map(d => d.familyAges[member.id] !== null ? `${d.familyAges[member.id]}歳` : '-')
         ];
         csvRows.push(memberRow.join(','));
       });
+    }
 
     csvRows.push('');
     csvRows.push('収入');
@@ -440,46 +442,50 @@ export function CashFlowTable({ data, appData }: CashFlowTableProps) {
         <table className="min-w-full text-sm border-collapse">
           <thead className="bg-gray-100 sticky top-0 z-20">
             <tr>
-              <th className="px-3 py-2 text-left font-medium text-gray-600 sticky left-0 bg-gray-100 z-30 min-w-[150px] border-r border-gray-300">
+              <th className="px-3 py-2 text-left font-medium text-gray-600 sticky left-0 bg-gray-100 z-30 min-w-[150px] border-r border-b border-gray-300">
                 西暦
               </th>
               {detailedData.map((d, i) => (
-                <th key={i} className="px-3 py-2 text-right font-medium text-gray-600 min-w-[80px]">
+                <th key={i} className="px-3 py-2 text-right font-medium text-gray-600 min-w-[80px] border-b border-gray-300">
                   {d.year}
+                </th>
+              ))}
+            </tr>
+            <tr>
+              <th className="px-3 py-2 text-left font-medium text-gray-600 sticky left-0 bg-gray-100 z-30 min-w-[150px] border-r border-gray-300">
+                {appData.userSettings.user_name || '本人'} (本人)
+              </th>
+              {detailedData.map((d, i) => (
+                <th key={i} className="px-3 py-2 text-right font-medium text-gray-500 min-w-[80px]">
+                  {d.age}歳
                 </th>
               ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            <tr className="bg-gray-200">
-              <td colSpan={detailedData.length + 1} className="px-3 py-1 font-bold text-xs text-gray-700 sticky left-0 z-10">
-                家族情報
-              </td>
-            </tr>
-            <tr>
-              <td className="px-3 py-2 text-gray-700 font-medium bg-gray-50 sticky left-0 z-10 border-r border-gray-300">
-                {appData.userSettings.user_name || '本人'} (本人)
-              </td>
-              {detailedData.map((d, i) => (
-                <td key={i} className="px-3 py-2 text-right text-gray-500 text-sm">
-                  {d.age}歳
-                </td>
-              ))}
-            </tr>
-            {appData.familyMembers
-              .filter((member) => member.relation !== 'self')
-              .map((member) => (
-                <tr key={member.id}>
-                  <td className="px-3 py-2 text-gray-700 font-medium bg-gray-50 sticky left-0 z-10 border-r border-gray-300">
-                    {member.name} ({getRelationLabel(member.relation)})
+            {appData.familyMembers.filter((member) => member.relation !== 'self').length > 0 && (
+              <>
+                <tr className="bg-gray-200">
+                  <td colSpan={detailedData.length + 1} className="px-3 py-1 font-bold text-xs text-gray-700 sticky left-0 z-10">
+                    家族情報
                   </td>
-                  {detailedData.map((d, i) => (
-                    <td key={i} className="px-3 py-2 text-right text-gray-500 text-sm">
-                      {d.familyAges[member.id] !== null ? `${d.familyAges[member.id]}歳` : '-'}
-                    </td>
-                  ))}
                 </tr>
-              ))}
+                {appData.familyMembers
+                  .filter((member) => member.relation !== 'self')
+                  .map((member) => (
+                    <tr key={member.id}>
+                      <td className="px-3 py-2 text-gray-700 font-medium bg-gray-50 sticky left-0 z-10 border-r border-gray-300">
+                        {member.name} ({getRelationLabel(member.relation)})
+                      </td>
+                      {detailedData.map((d, i) => (
+                        <td key={i} className="px-3 py-2 text-right text-gray-500 text-sm">
+                          {d.familyAges[member.id] !== null ? `${d.familyAges[member.id]}歳` : '-'}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+              </>
+            )}
 
             <tr className="bg-blue-100">
               <td colSpan={detailedData.length + 1} className="px-3 py-1 font-bold text-xs text-blue-800 sticky left-0 z-10">
