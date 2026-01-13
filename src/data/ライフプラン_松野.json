@@ -1,0 +1,28 @@
+{
+  "userSettings": {
+    "user_name": "",
+    "birth_date": "",
+    "gender": "male",
+    "disability": "none",
+    "life_expectancy": 85,
+    "simulation_end_age": 85,
+    "current_savings": 300
+  },
+  "incomes": [],
+  "expenses": [],
+  "lifeEvents": [],
+  "familyMembers": [],
+  "insurances": [],
+  "pensions": [],
+  "educationFunds": [],
+  "housings": [],
+  "assets": [],
+  "realEstates": [],
+  "loans": [],
+  "goals": {
+    "q1": "",
+    "q2": "",
+    "q3": "",
+    "q4": ""
+  }
+}
