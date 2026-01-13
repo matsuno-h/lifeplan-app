@@ -1,10 +1,11 @@
-import { Line } from 'react-chartjs-2';
+import { Chart } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
   Title,
   Tooltip,
   Legend,
@@ -17,6 +18,7 @@ ChartJS.register(
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
   Title,
   Tooltip,
   Legend,
@@ -42,6 +44,7 @@ export function AssetChart({ data }: AssetChartProps) {
     labels: data.map(d => `${d.age}歳`),
     datasets: [
       {
+        type: 'line' as const,
         label: '資産残高',
         data: data.map(d => d.balance),
         borderColor: 'rgb(59, 130, 246)',
@@ -50,6 +53,22 @@ export function AssetChart({ data }: AssetChartProps) {
         tension: 0.1,
         pointRadius: 2,
         pointHoverRadius: 5,
+        yAxisID: 'y',
+      },
+      {
+        type: 'bar' as const,
+        label: '年間収支',
+        data: data.map(d => d.income - d.expense),
+        backgroundColor: data.map(d => {
+          const balance = d.income - d.expense;
+          return balance >= 0 ? 'rgba(34, 197, 94, 0.6)' : 'rgba(239, 68, 68, 0.6)';
+        }),
+        borderColor: data.map(d => {
+          const balance = d.income - d.expense;
+          return balance >= 0 ? 'rgb(34, 197, 94)' : 'rgb(239, 68, 68)';
+        }),
+        borderWidth: 1,
+        yAxisID: 'y1',
       }
     ]
   };
@@ -79,6 +98,9 @@ export function AssetChart({ data }: AssetChartProps) {
     },
     scales: {
       y: {
+        type: 'linear' as const,
+        display: true,
+        position: 'left' as const,
         beginAtZero: false,
         ticks: {
           callback: function(value: any) {
@@ -88,6 +110,23 @@ export function AssetChart({ data }: AssetChartProps) {
         title: {
           display: true,
           text: '資産残高（万円）'
+        }
+      },
+      y1: {
+        type: 'linear' as const,
+        display: true,
+        position: 'right' as const,
+        grid: {
+          drawOnChartArea: false,
+        },
+        ticks: {
+          callback: function(value: any) {
+            return value.toLocaleString() + '万';
+          }
+        },
+        title: {
+          display: true,
+          text: '年間収支（万円）'
         }
       },
       x: {
@@ -105,7 +144,7 @@ export function AssetChart({ data }: AssetChartProps) {
 
   return (
     <div className="relative" style={{ height: '400px', width: '100%' }}>
-      <Line data={chartData} options={options} />
+      <Chart type='bar' data={chartData} options={options} />
     </div>
   );
 }
