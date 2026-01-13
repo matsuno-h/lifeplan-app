@@ -71,14 +71,11 @@ export function LoanBalanceTable({ appData }: LoanBalanceTableProps) {
         }
       });
 
-      const hasActiveLoans = Object.values(loanBalances).some(balance => balance > 0);
-      if (hasActiveLoans) {
-        results.push({
-          age,
-          year,
-          loanBalances,
-        });
-      }
+      results.push({
+        age,
+        year,
+        loanBalances,
+      });
     }
 
     return results;
