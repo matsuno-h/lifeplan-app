@@ -79,8 +79,7 @@ export function PlanDashboard({ onSelectPlan, onCreateNew }: PlanDashboardProps)
   };
 
   const getPlanTitle = (plan: LifePlan) => {
-    const userName = plan.plan_data?.userSettings?.user_name;
-    return userName ? `${userName}のライフプラン` : 'ライフプラン';
+    return `プラン：${plan.plan_number}`;
   };
 
   if (loading) {
