@@ -144,13 +144,21 @@ export function PlanDashboard({ onSelectPlan, onCreateNew }: PlanDashboardProps)
 
         {activeSection === 'owned' && (
           <div className="space-y-4">
-            <button
-              onClick={onCreateNew}
-              className="w-full bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow border-2 border-dashed border-blue-300 flex items-center justify-center gap-3 text-blue-600 hover:bg-blue-50"
-            >
-              <Plus className="w-6 h-6" />
-              <span className="font-medium">新しいプランを作成</span>
-            </button>
+            {ownedPlans.length < 3 ? (
+              <button
+                onClick={onCreateNew}
+                className="w-full bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow border-2 border-dashed border-blue-300 flex items-center justify-center gap-3 text-blue-600 hover:bg-blue-50"
+              >
+                <Plus className="w-6 h-6" />
+                <span className="font-medium">新しいプランを作成</span>
+              </button>
+            ) : (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center">
+                <p className="text-amber-800 text-sm">
+                  作成できるプランは最大3つまでです。新しいプランを作成する場合は、既存のプランを削除してください。
+                </p>
+              </div>
+            )}
 
             {hasOwnedPlans ? (
               ownedPlans.map((plan) => (
