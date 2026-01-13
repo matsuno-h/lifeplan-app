@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Users, UserPlus, Trash2, Edit3, Eye, Loader2, AlertCircle, Check } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { Collaborator } from '../../types';
 
@@ -20,7 +20,7 @@ export function ShareSettingsTab({ planId, isOwner }: ShareSettingsTabProps) {
   const [success, setSuccess] = useState('');
 
   const loadCollaborators = useCallback(async () => {
-    if (!planId || !user) {
+    if (!planId || !user || !isSupabaseConfigured || !supabase) {
       setLoading(false);
       return;
     }
@@ -47,7 +47,7 @@ export function ShareSettingsTab({ planId, isOwner }: ShareSettingsTabProps) {
 
   const handleAddCollaborator = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!planId || !user || !email.trim()) return;
+    if (!planId || !user || !email.trim() || !isSupabaseConfigured || !supabase) return;
 
     if (email.toLowerCase() === user.email?.toLowerCase()) {
       setError('自分自身を招待することはできません');
@@ -98,6 +98,7 @@ export function ShareSettingsTab({ planId, isOwner }: ShareSettingsTabProps) {
   };
 
   const handleUpdatePermission = async (collaboratorId: string, newPermission: 'view' | 'edit') => {
+    if (!isSupabaseConfigured || !supabase) return;
     try {
       const { error } = await supabase
         .from('plan_collaborators')
@@ -114,6 +115,7 @@ export function ShareSettingsTab({ planId, isOwner }: ShareSettingsTabProps) {
 
   const handleRemoveCollaborator = async (collaboratorId: string) => {
     if (!confirm('この共有を解除してよろしいですか？')) return;
+    if (!isSupabaseConfigured || !supabase) return;
 
     try {
       const { error } = await supabase

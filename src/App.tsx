@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { useSupabaseData } from './hooks/useSupabaseData';
+import { isSupabaseConfigured } from './lib/supabase';
 import { Header } from './components/Header';
 import { TabNavigation } from './components/TabNavigation';
 import { GoalsTab } from './components/tabs/GoalsTab';
@@ -724,7 +725,16 @@ function AppContent() {
           currentPlanNumber={user ? planNumber : undefined}
         />
 
-        {!user && (
+        {!isSupabaseConfigured && (
+          <div className="mb-4 bg-amber-50 border border-amber-300 text-amber-800 px-4 py-3 rounded relative text-sm">
+            <span className="block sm:inline">
+              <strong>注意:</strong> データベース接続が設定されていません。データはブラウザにのみ保存されます。
+              本番環境では環境変数（VITE_SUPABASE_URL、VITE_SUPABASE_ANON_KEY）を設定してください。
+            </span>
+          </div>
+        )}
+
+        {!user && isSupabaseConfigured && (
           <div className="mb-4 bg-blue-50 border border-blue-300 text-blue-800 px-4 py-3 rounded relative text-sm">
             <span className="block sm:inline">
               現在、データはブラウザにのみ保存されています。

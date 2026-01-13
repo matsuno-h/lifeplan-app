@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { FileText, Users, Plus, Edit3, Eye, Loader2, ChevronRight } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { LifePlan } from '../types';
 
@@ -17,7 +17,7 @@ export function PlanDashboard({ onSelectPlan, onCreateNew }: PlanDashboardProps)
   const [activeSection, setActiveSection] = useState<'owned' | 'shared'>('owned');
 
   const loadPlans = useCallback(async () => {
-    if (!user) {
+    if (!user || !isSupabaseConfigured || !supabase) {
       setLoading(false);
       return;
     }

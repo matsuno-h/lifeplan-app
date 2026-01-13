@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { AppData } from '../types';
 
@@ -24,7 +24,7 @@ export function useSupabaseData(initialData: AppData, options?: UseSupabaseDataO
   );
 
   const saveDataToSupabase = useCallback(async (newData: AppData) => {
-    if (!user) {
+    if (!user || !isSupabaseConfigured || !supabase) {
       localStorage.setItem('life_plan_simulator_data', JSON.stringify(newData));
       return;
     }
@@ -89,7 +89,7 @@ export function useSupabaseData(initialData: AppData, options?: UseSupabaseDataO
   }, [user, currentPlanId, currentPlanNumber, canEdit]);
 
   const loadDataFromSupabase = useCallback(async () => {
-    if (!user) {
+    if (!user || !isSupabaseConfigured || !supabase) {
       const localData = localStorage.getItem('life_plan_simulator_data');
       if (localData) {
         try {

@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 interface AuthContextType {
   user: User | null;
@@ -19,6 +19,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) {
+      setLoading(false);
+      return;
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -37,6 +42,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signInWithEmail = async (email: string, password: string) => {
+    if (!isSupabaseConfigured || !supabase) {
+      return { error: 'データベース接続が設定されていません。環境変数を確認してください。' };
+    }
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -49,6 +57,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signUpWithEmail = async (email: string, password: string) => {
+    if (!isSupabaseConfigured || !supabase) {
+      return { error: 'データベース接続が設定されていません。環境変数を確認してください。' };
+    }
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -79,6 +90,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
+    if (!isSupabaseConfigured || !supabase) {
+      return;
+    }
     const { error } = await supabase.auth.signOut();
     if (error) {
       console.error('Error signing out:', error);
