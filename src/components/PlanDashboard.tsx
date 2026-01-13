@@ -26,7 +26,8 @@ export function PlanDashboard({ onSelectPlan, onCreateNew }: PlanDashboardProps)
       const { data: owned, error: ownedError } = await supabase
         .from('user_life_plans')
         .select('*')
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .order('plan_number', { ascending: true });
 
       if (ownedError) throw ownedError;
       setOwnedPlans(owned || []);
@@ -66,7 +67,7 @@ export function PlanDashboard({ onSelectPlan, onCreateNew }: PlanDashboardProps)
             owner_name: ownerName,
             permission: collab?.permission || 'view',
           };
-        });
+        }).sort((a, b) => a.plan_number - b.plan_number);
 
         setSharedPlans(sharedWithPermissions as (LifePlan & { owner_name: string; permission: 'view' | 'edit' })[]);
       }
