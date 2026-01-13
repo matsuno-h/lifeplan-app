@@ -69,7 +69,9 @@ export function Header({ onExport, onImport, onClear, onShowDashboard, currentPl
               <TrendingUp className="mr-2" />
               ライフプラン シミュレーター
             </h1>
-            <p className="text-gray-600">あなたの未来の資産推移を可視化しましょう</p>
+            {currentPlanNumber && (
+              <p className="text-gray-600 font-medium">現在表示中のプラン：{currentPlanNumber}</p>
+            )}
           </div>
           <div className="flex-1 flex justify-end items-start gap-2">
             {user ? (
