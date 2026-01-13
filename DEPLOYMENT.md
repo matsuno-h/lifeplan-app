@@ -9,6 +9,23 @@
 - `VITE_SUPABASE_URL`: SupabaseプロジェクトのURL
 - `VITE_SUPABASE_ANON_KEY`: Supabaseの匿名キー
 
+### オプション環境変数（招待メール機能用）
+
+招待メール機能を有効にするには、Supabase Edge Functionsに以下の環境変数を設定する必要があります:
+
+- `RESEND_API_KEY`: Resend APIキー（[Resend](https://resend.com/)から取得）
+- `RESEND_FROM_EMAIL`: メール送信元アドレス（例: `noreply@yourdomain.com`）
+- `APP_URL`: アプリケーションのURL（例: `https://your-app.netlify.app`）
+
+これらの環境変数が設定されていない場合、招待機能は動作しますが招待メールは送信されません。
+
+#### Resend APIキーの取得方法
+
+1. [Resend](https://resend.com/)にアカウントを作成
+2. ダッシュボードから `API Keys` を開く
+3. 新しいAPIキーを作成してコピー
+4. Supabaseプロジェクトの `Edge Functions` → `Environment Variables` で設定
+
 ### プラットフォーム別設定方法
 
 #### Netlify

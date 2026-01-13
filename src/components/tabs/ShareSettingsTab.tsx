@@ -7,9 +7,10 @@ import { Collaborator } from '../../types';
 interface ShareSettingsTabProps {
   planId: string | null;
   isOwner: boolean;
+  planNumber?: number;
 }
 
-export function ShareSettingsTab({ planId, isOwner }: ShareSettingsTabProps) {
+export function ShareSettingsTab({ planId, isOwner, planNumber }: ShareSettingsTabProps) {
   const { user } = useAuth();
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [loading, setLoading] = useState(true);
@@ -18,6 +19,7 @@ export function ShareSettingsTab({ planId, isOwner }: ShareSettingsTabProps) {
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [userName, setUserName] = useState<string>('');
 
   const loadCollaborators = useCallback(async () => {
     if (!planId || !user || !isSupabaseConfigured || !supabase) {
@@ -44,6 +46,75 @@ export function ShareSettingsTab({ planId, isOwner }: ShareSettingsTabProps) {
   useEffect(() => {
     loadCollaborators();
   }, [loadCollaborators]);
+
+  useEffect(() => {
+    if (user && isSupabaseConfigured && supabase) {
+      loadUserProfile();
+    }
+  }, [user]);
+
+  const loadUserProfile = async () => {
+    if (!user || !isSupabaseConfigured || !supabase) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('name')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error loading user profile:', error);
+        setUserName(user.email || 'ユーザー');
+        return;
+      }
+
+      if (data) {
+        setUserName(data.name);
+      } else {
+        setUserName(user.email || 'ユーザー');
+      }
+    } catch (err) {
+      console.error('Error loading user profile:', err);
+      setUserName(user.email || 'ユーザー');
+    }
+  };
+
+  const sendInvitationEmail = async (inviteeEmail: string, permission: 'view' | 'edit') => {
+    if (!isSupabaseConfigured || !supabase || !planNumber) return;
+
+    try {
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-invitation-email`;
+
+      const headers = {
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+      };
+
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          inviteeEmail,
+          inviterName: userName || user?.email || 'ユーザー',
+          planNumber,
+          permission,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        if (result.configured === false) {
+          console.log('Email service not configured, skipping email notification');
+        } else {
+          console.error('Failed to send invitation email:', result.error);
+        }
+      }
+    } catch (err) {
+      console.error('Error sending invitation email:', err);
+    }
+  };
 
   const handleAddCollaborator = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,6 +155,8 @@ export function ShareSettingsTab({ planId, isOwner }: ShareSettingsTabProps) {
         });
 
       if (insertError) throw insertError;
+
+      await sendInvitationEmail(email.toLowerCase(), permission);
 
       setSuccess(`${email} を招待しました`);
       setEmail('');

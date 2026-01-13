@@ -863,6 +863,7 @@ function AppContent() {
               <ShareSettingsTab
                 planId={planId}
                 isOwner={isOwner}
+                planNumber={planNumber}
               />
             )}
           </div>
