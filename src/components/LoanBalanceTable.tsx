@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ChevronRight, ChevronDown } from 'lucide-react';
-import { AppData, Loan } from '../types';
+import { AppData, Loan, RealEstate } from '../types';
 
 interface LoanBalanceTableProps {
   appData: AppData;
@@ -12,10 +12,20 @@ interface LoanBalanceData {
   loanBalances: { [loanId: string]: number };
 }
 
+interface LoanItem {
+  id: string;
+  name: string;
+  type: 'loan' | 'realEstate';
+  initialBalance: number;
+}
+
 export function LoanBalanceTable({ appData }: LoanBalanceTableProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  if (!appData || !appData.loans || appData.loans.length === 0) {
+  const hasLoans = appData?.loans?.length > 0;
+  const hasRealEstateLoans = appData?.realEstates?.some(re => re.loan_amount && re.loan_payments);
+
+  if (!appData || (!hasLoans && !hasRealEstateLoans)) {
     return null;
   }
 
@@ -45,6 +55,17 @@ export function LoanBalanceTable({ appData }: LoanBalanceTableProps) {
         }
       });
 
+      appData.realEstates.forEach((realEstate: RealEstate) => {
+        if (realEstate.loan_amount && realEstate.loan_payments) {
+          if (age >= realEstate.purchase_age) {
+            const yearsFromPurchase = age - realEstate.purchase_age;
+            const totalPaid = realEstate.loan_payments * 12 * yearsFromPurchase;
+            const remainingBalance = realEstate.loan_amount - totalPaid;
+            loanBalances[`re_${realEstate.id}`] = Math.max(0, remainingBalance);
+          }
+        }
+      });
+
       const hasActiveLoans = Object.values(loanBalances).some(balance => balance > 0);
       if (hasActiveLoans) {
         results.push({
@@ -63,6 +84,23 @@ export function LoanBalanceTable({ appData }: LoanBalanceTableProps) {
   if (loanBalanceData.length === 0) {
     return null;
   }
+
+  const allLoanItems: LoanItem[] = [
+    ...appData.loans.map(loan => ({
+      id: loan.id,
+      name: loan.name,
+      type: 'loan' as const,
+      initialBalance: loan.balance,
+    })),
+    ...appData.realEstates
+      .filter(re => re.loan_amount && re.loan_payments)
+      .map(re => ({
+        id: `re_${re.id}`,
+        name: `${re.name} (不動産ローン)`,
+        type: 'realEstate' as const,
+        initialBalance: re.loan_amount!,
+      })),
+  ];
 
   return (
     <div className="mt-6">
@@ -104,21 +142,24 @@ export function LoanBalanceTable({ appData }: LoanBalanceTableProps) {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {appData.loans.map((loan: Loan) => (
-                <tr key={loan.id}>
+              {allLoanItems.map((loanItem) => (
+                <tr key={loanItem.id}>
                   <td className="px-3 py-2 text-gray-700 font-medium bg-gray-50 sticky left-0 z-10 border-r border-gray-300">
-                    {loan.name}
+                    {loanItem.name}
                   </td>
                   {loanBalanceData.map((d, i) => {
-                    const balance = d.loanBalances[loan.id];
+                    const balance = d.loanBalances[loanItem.id] ?? 0;
+                    const hasBalance = balance !== undefined;
                     return (
                       <td key={i} className="px-3 py-2 text-right whitespace-nowrap">
-                        {balance > 0 ? (
-                          <span className={balance < loan.balance * 0.2 ? 'text-green-600' : ''}>
+                        {hasBalance && balance > 0 ? (
+                          <span className={balance < loanItem.initialBalance * 0.2 ? 'text-green-600' : ''}>
                             {Math.round(balance).toLocaleString()}
                           </span>
-                        ) : (
+                        ) : hasBalance ? (
                           <span className="text-gray-400">完済</span>
+                        ) : (
+                          <span className="text-gray-300">-</span>
                         )}
                       </td>
                     );
