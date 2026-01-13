@@ -428,7 +428,7 @@ export function CashFlowTable({ data, appData }: CashFlowTableProps) {
               </td>
             </tr>
             {renderDetailRows('income', detailedData.map((d) => d.incomeDetails), '収入合計')}
-            {renderDetailRows('investmentWithdrawal', detailedData.map((d) => d.investmentWithdrawalDetails), '金融資産の取り崩し')}
+            {renderDetailRows('investmentWithdrawal', detailedData.map((d) => d.investmentWithdrawalDetails), '金融資産取崩')}
 
             <tr className="bg-red-100">
               <td colSpan={detailedData.length + 1} className="px-3 py-1 font-bold text-xs text-red-800 sticky left-0 z-10">
@@ -439,7 +439,7 @@ export function CashFlowTable({ data, appData }: CashFlowTableProps) {
             {renderDetailRows('education', detailedData.map((d) => d.educationDetails), '教育費')}
             {renderDetailRows('housing', detailedData.map((d) => d.housingDetails), '住居費・ローン')}
             {renderDetailRows('insurance', detailedData.map((d) => d.insuranceDetails), '保険料')}
-            {renderDetailRows('investmentContribution', detailedData.map((d) => d.investmentContributionDetails), '金融資産の積み立て')}
+            {renderDetailRows('investmentContribution', detailedData.map((d) => d.investmentContributionDetails), '金融資産積立')}
 
             <tr className="bg-yellow-100">
               <td colSpan={detailedData.length + 1} className="px-3 py-1 font-bold text-xs text-yellow-800 sticky left-0 z-10">
