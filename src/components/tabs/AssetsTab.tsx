@@ -72,8 +72,7 @@ export function AssetsTab({
       purchase_date: formData.get('re_purchase_date') as string,
       purchase_price: parseInt(formData.get('re_price') as string) || 0,
       initial_cost: parseInt(formData.get('re_initial_cost') as string) || undefined,
-      loan_amount: parseInt(formData.get('re_loan_amount') as string) || undefined,
-      loan_rate: parseFloat(formData.get('re_loan_rate') as string) || undefined,
+      loan_payments: parseInt(formData.get('re_loan_payments') as string) || undefined,
       loan_term_months: parseInt(formData.get('re_loan_term_months') as string) || undefined,
       monthly_rent_income: parseInt(formData.get('re_rent_income') as string) || undefined,
       monthly_maintenance_cost: parseInt(formData.get('re_maintenance_cost') as string) || undefined,
@@ -100,8 +99,7 @@ export function AssetsTab({
       (form.elements.namedItem('re_purchase_date') as HTMLInputElement).value = re.purchase_date || '';
       (form.elements.namedItem('re_price') as HTMLInputElement).value = re.purchase_price.toString();
       (form.elements.namedItem('re_initial_cost') as HTMLInputElement).value = re.initial_cost?.toString() || '';
-      (form.elements.namedItem('re_loan_amount') as HTMLInputElement).value = re.loan_amount?.toString() || '';
-      (form.elements.namedItem('re_loan_rate') as HTMLInputElement).value = re.loan_rate?.toString() || '';
+      (form.elements.namedItem('re_loan_payments') as HTMLInputElement).value = re.loan_payments?.toString() || '';
       (form.elements.namedItem('re_loan_term_months') as HTMLInputElement).value = re.loan_term_months?.toString() || '';
       (form.elements.namedItem('re_rent_income') as HTMLInputElement).value = re.monthly_rent_income?.toString() || '';
       (form.elements.namedItem('re_maintenance_cost') as HTMLInputElement).value = re.monthly_maintenance_cost?.toString() || '';
@@ -381,41 +379,28 @@ export function AssetsTab({
             <p className="text-xs font-bold text-gray-700">ローン設定 (任意)</p>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">借入額</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">返済額（月額）</label>
                 <div className="flex items-center">
                   <input
                     type="number"
-                    name="re_loan_amount"
-                    placeholder="1800"
+                    name="re_loan_payments"
+                    placeholder="5"
                     className="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm"
                   />
                   <span className="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">金利</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">返済回数</label>
                 <div className="flex items-center">
                   <input
                     type="number"
-                    name="re_loan_rate"
-                    placeholder="2.5"
-                    step="0.1"
+                    name="re_loan_term_months"
+                    placeholder="420"
                     className="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm"
                   />
-                  <span className="ml-2 text-gray-500 text-sm whitespace-nowrap">%</span>
+                  <span className="ml-2 text-gray-500 text-sm whitespace-nowrap">回</span>
                 </div>
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">返済回数</label>
-              <div className="flex items-center">
-                <input
-                  type="number"
-                  name="re_loan_term_months"
-                  placeholder="420"
-                  className="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm"
-                />
-                <span className="ml-2 text-gray-500 text-sm whitespace-nowrap">回</span>
               </div>
             </div>
           </div>
@@ -538,8 +523,11 @@ export function AssetsTab({
                       )}
                     </div>
                     <div className="text-xs text-gray-500 mt-1 space-x-2">
-                      {re.loan_amount && (
-                        <span>ローン{re.loan_amount}万円</span>
+                      {re.loan_payments && (
+                        <span>返済{re.loan_payments}万円/月</span>
+                      )}
+                      {re.loan_term_months && (
+                        <span>{re.loan_term_months}回払い</span>
                       )}
                       {re.monthly_rent_income && (
                         <span>家賃{re.monthly_rent_income}万円/月</span>

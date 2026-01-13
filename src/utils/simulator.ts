@@ -5,12 +5,6 @@ const safeNum = (val: number | undefined | null): number => {
   return (isNaN(num) || !isFinite(num)) ? 0 : num;
 };
 
-const calculateMonthlyPayment = (principal: number, annualRate: number, months: number): number => {
-  if (months <= 0 || annualRate === 0) return principal / months || 0;
-  const monthlyRate = annualRate / 100 / 12;
-  return principal * (monthlyRate * Math.pow(1 + monthlyRate, months)) / (Math.pow(1 + monthlyRate, months) - 1);
-};
-
 const calculatePurchaseAge = (purchaseDate: string, birthDate: string, currentAge: number, currentYear: number): number => {
   const purchaseYear = new Date(purchaseDate + '-01').getFullYear();
   const birthYear = new Date(birthDate).getFullYear();
@@ -142,15 +136,9 @@ export function calculateCashFlow(data: AppData): CashFlowData[] {
     data.realEstates.forEach((property) => {
       const purchaseAge = property.purchase_age || calculatePurchaseAge(property.purchase_date, data.userSettings.birth_date, currentAge, currentYear);
 
-      let monthlyPayment = property.loan_payments;
-      if (!monthlyPayment && property.loan_amount && property.loan_rate && property.loan_term_months) {
-        monthlyPayment = calculateMonthlyPayment(property.loan_amount, property.loan_rate, property.loan_term_months);
-      }
-
       if (age === purchaseAge) {
         yearlyExpense += safeNum(property.purchase_price);
         if (property.initial_cost) yearlyExpense += safeNum(property.initial_cost);
-        if (property.loan_amount) yearlyIncome += safeNum(property.loan_amount);
       }
 
       if (age >= purchaseAge) {
@@ -158,38 +146,21 @@ export function calculateCashFlow(data: AppData): CashFlowData[] {
         if (property.monthly_maintenance_cost) yearlyExpense += safeNum(property.monthly_maintenance_cost) * 12;
         if (property.annual_property_tax) yearlyExpense += safeNum(property.annual_property_tax);
 
-        if (monthlyPayment && property.loan_term_months) {
+        if (property.loan_payments && property.loan_term_months) {
           const monthsElapsed = (age - purchaseAge) * 12;
           if (monthsElapsed < property.loan_term_months) {
-            yearlyExpense += monthlyPayment * 12;
+            yearlyExpense += safeNum(property.loan_payments) * 12;
           }
         }
       }
 
       if (property.sale_date) {
         const saleYear = new Date(property.sale_date + '-01').getFullYear();
-        const saleMonth = new Date(property.sale_date + '-01').getMonth();
         const ageAtSale = saleYear - new Date(data.userSettings.birth_date).getFullYear();
 
         if (age === ageAtSale) {
           if (property.sale_price) yearlyIncome += safeNum(property.sale_price);
           if (property.sale_cost) yearlyExpense += safeNum(property.sale_cost);
-
-          if (property.loan_amount && property.loan_rate && property.loan_term_months && monthlyPayment) {
-            const monthlyRate = property.loan_rate / 100 / 12;
-            const monthsElapsed = (ageAtSale - purchaseAge) * 12;
-            let balance = property.loan_amount;
-
-            for (let m = 0; m < monthsElapsed && m < property.loan_term_months; m++) {
-              const interest = balance * monthlyRate;
-              const principal = monthlyPayment - interest;
-              balance -= principal;
-            }
-
-            if (balance > 0) {
-              yearlyExpense += balance;
-            }
-          }
         }
       }
     });

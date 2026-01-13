@@ -56,36 +56,17 @@ export function LoanBalanceTable({ appData }: LoanBalanceTableProps) {
       });
 
       appData.realEstates.forEach((realEstate: RealEstate) => {
-        if (realEstate.loan_amount) {
+        if (realEstate.loan_payments && realEstate.loan_term_months) {
           const purchaseYear = new Date(realEstate.purchase_date + '-01').getFullYear();
           const birthYear = new Date(appData.userSettings.birth_date).getFullYear();
           const purchaseAge = realEstate.purchase_age || (purchaseYear - birthYear);
 
-          let monthlyPayment = realEstate.loan_payments;
-          if (!monthlyPayment && realEstate.loan_rate && realEstate.loan_term_months) {
-            const monthlyRate = realEstate.loan_rate / 100 / 12;
-            monthlyPayment = realEstate.loan_amount * (monthlyRate * Math.pow(1 + monthlyRate, realEstate.loan_term_months)) / (Math.pow(1 + monthlyRate, realEstate.loan_term_months) - 1);
-          }
-
-          if (monthlyPayment && age >= purchaseAge) {
+          if (age >= purchaseAge) {
             const monthsFromPurchase = (age - purchaseAge) * 12;
+            const remainingMonths = Math.max(0, realEstate.loan_term_months - monthsFromPurchase);
+            const remainingBalance = realEstate.loan_payments * remainingMonths;
 
-            if (realEstate.loan_rate && realEstate.loan_term_months) {
-              const monthlyRate = realEstate.loan_rate / 100 / 12;
-              let balance = realEstate.loan_amount;
-
-              for (let month = 0; month < monthsFromPurchase && month < realEstate.loan_term_months && balance > 0; month++) {
-                const interest = balance * monthlyRate;
-                const principal = monthlyPayment - interest;
-                balance -= principal;
-              }
-
-              loanBalances[`re_${realEstate.id}`] = Math.max(0, balance);
-            } else {
-              const totalPaid = monthlyPayment * monthsFromPurchase;
-              const remainingBalance = realEstate.loan_amount - totalPaid;
-              loanBalances[`re_${realEstate.id}`] = Math.max(0, remainingBalance);
-            }
+            loanBalances[`re_${realEstate.id}`] = remainingBalance;
           }
         }
       });
