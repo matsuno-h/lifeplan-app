@@ -1,6 +1,8 @@
-import { Upload, Download, Trash2, TrendingUp, LogOut, User, LogIn, X, LayoutGrid } from 'lucide-react';
+import { Upload, Download, Trash2, TrendingUp, LogOut, User, LogIn, X, LayoutGrid, Settings } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { ProfileSettings } from './ProfileSettings';
 
 interface HeaderProps {
   onExport: () => void;
@@ -13,11 +15,46 @@ interface HeaderProps {
 export function Header({ onExport, onImport, onClear, onShowDashboard, currentPlanNumber }: HeaderProps) {
   const { user, signOut, signInWithEmail, signUpWithEmail } = useAuth();
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showProfileSettings, setShowProfileSettings] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [userName, setUserName] = useState<string>('');
+
+  useEffect(() => {
+    if (user && isSupabaseConfigured && supabase) {
+      loadUserProfile();
+    }
+  }, [user]);
+
+  const loadUserProfile = async () => {
+    if (!user || !isSupabaseConfigured || !supabase) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('name')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error loading user profile:', error);
+        setUserName(user.email || 'ユーザー');
+        return;
+      }
+
+      if (data) {
+        setUserName(data.name);
+      } else {
+        setUserName(user.email || 'ユーザー');
+      }
+    } catch (err) {
+      console.error('Error loading user profile:', err);
+      setUserName(user.email || 'ユーザー');
+    }
+  };
 
   const handleSignOut = async () => {
     if (confirm('ログアウトしますか？')) {
@@ -87,8 +124,15 @@ export function Header({ onExport, onImport, onClear, onShowDashboard, currentPl
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 px-4 py-2 flex items-center gap-3">
                   <div className="flex items-center gap-2 text-sm">
                     <User className="h-4 w-4 text-gray-600" />
-                    <span className="text-gray-700 font-medium">{user.email}</span>
+                    <span className="text-gray-700 font-medium">{userName || user.email}</span>
                   </div>
+                  <button
+                    onClick={() => setShowProfileSettings(true)}
+                    className="text-gray-500 hover:text-blue-600 transition-colors"
+                    title="プロフィール設定"
+                  >
+                    <Settings className="h-4 w-4" />
+                  </button>
                   <button
                     onClick={handleSignOut}
                     className="text-gray-500 hover:text-red-600 transition-colors"
@@ -212,6 +256,13 @@ export function Header({ onExport, onImport, onClear, onShowDashboard, currentPl
             </div>
           </div>
         </div>
+      )}
+
+      {showProfileSettings && (
+        <ProfileSettings onClose={() => {
+          setShowProfileSettings(false);
+          loadUserProfile();
+        }} />
       )}
     </>
   );

@@ -12,7 +12,7 @@ interface PlanDashboardProps {
 export function PlanDashboard({ onSelectPlan, onCreateNew }: PlanDashboardProps) {
   const { user } = useAuth();
   const [ownedPlans, setOwnedPlans] = useState<LifePlan[]>([]);
-  const [sharedPlans, setSharedPlans] = useState<(LifePlan & { owner_email: string; permission: 'view' | 'edit' })[]>([]);
+  const [sharedPlans, setSharedPlans] = useState<(LifePlan & { owner_name: string; permission: 'view' | 'edit' })[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeSection, setActiveSection] = useState<'owned' | 'shared'>('owned');
 
@@ -50,25 +50,25 @@ export function PlanDashboard({ onSelectPlan, onCreateNew }: PlanDashboardProps)
         if (sharedError) throw sharedError;
 
         const { data: ownersData, error: ownersError } = await supabase
-          .rpc('get_user_emails', { user_ids: ownerIds });
+          .rpc('get_user_info', { user_ids: ownerIds });
 
         if (ownersError) {
           console.error('Error fetching owners:', ownersError);
         }
 
-        const ownersMap = new Map((ownersData || []).map((owner: { id: string; email: string }) => [owner.id, owner.email]));
+        const ownersMap = new Map((ownersData || []).map((owner: { id: string; email: string; name: string }) => [owner.id, owner.name]));
 
         const sharedWithPermissions = (sharedPlanData || []).map(plan => {
           const collab = collaborations.find(c => c.plan_id === plan.id);
-          const ownerEmail = ownersMap.get(collab?.owner_id || '') || '不明';
+          const ownerName = ownersMap.get(collab?.owner_id || '') || '不明';
           return {
             ...plan,
-            owner_email: ownerEmail,
+            owner_name: ownerName,
             permission: collab?.permission || 'view',
           };
         });
 
-        setSharedPlans(sharedWithPermissions as (LifePlan & { owner_email: string; permission: 'view' | 'edit' })[]);
+        setSharedPlans(sharedWithPermissions as (LifePlan & { owner_name: string; permission: 'view' | 'edit' })[]);
       }
     } catch (err) {
       console.error('Error loading plans:', err);
@@ -199,7 +199,7 @@ export function PlanDashboard({ onSelectPlan, onCreateNew }: PlanDashboardProps)
                     </div>
                     <div>
                       <h3 className="font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">
-                        {plan.owner_email} - プラン {plan.plan_number}
+                        {plan.owner_name} - プラン {plan.plan_number}
                       </h3>
                       <div className="flex items-center gap-2 mt-1">
                         <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${
