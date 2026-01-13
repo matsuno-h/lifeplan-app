@@ -13,6 +13,8 @@ interface RowData {
   familyAges: { [id: string]: number | null };
   income: number;
   incomeDetails: { [name: string]: number };
+  investmentWithdrawal: number;
+  investmentWithdrawalDetails: { [name: string]: number };
   basicExpenses: number;
   expenseDetails: { [name: string]: number };
   educationCost: number;
@@ -21,6 +23,8 @@ interface RowData {
   housingDetails: { [name: string]: number };
   insuranceCost: number;
   insuranceDetails: { [name: string]: number };
+  investmentContribution: number;
+  investmentContributionDetails: { [name: string]: number };
   eventCost: number;
   eventNames: string;
   balance: number;
@@ -179,6 +183,8 @@ export function CashFlowTable({ data, appData }: CashFlowTableProps) {
 
       let totalInvestmentContribution = 0;
       let totalInvestmentWithdrawal = 0;
+      const investmentContributionDetails: { [name: string]: number } = {};
+      const investmentWithdrawalDetails: { [name: string]: number } = {};
 
       appData.assets.forEach((asset) => {
         const returnRate = asset.return_rate / 100;
@@ -188,6 +194,7 @@ export function CashFlowTable({ data, appData }: CashFlowTableProps) {
           if (!asset.withdrawal_age || age < asset.withdrawal_age) {
             assetBalances[asset.id] += asset.yearly_contribution;
             totalInvestmentContribution += asset.yearly_contribution;
+            investmentContributionDetails[asset.name] = asset.yearly_contribution;
           }
         }
 
@@ -195,6 +202,7 @@ export function CashFlowTable({ data, appData }: CashFlowTableProps) {
           const withdrawal = Math.min(asset.withdrawal_amount, assetBalances[asset.id]);
           assetBalances[asset.id] -= withdrawal;
           totalInvestmentWithdrawal += withdrawal;
+          investmentWithdrawalDetails[asset.name] = Math.round(withdrawal);
         }
       });
 
@@ -239,6 +247,8 @@ export function CashFlowTable({ data, appData }: CashFlowTableProps) {
         familyAges,
         income: Math.round(totalIncome),
         incomeDetails,
+        investmentWithdrawal: Math.round(totalInvestmentWithdrawal),
+        investmentWithdrawalDetails,
         basicExpenses: Math.round(basicExpenses),
         expenseDetails,
         educationCost: Math.round(educationCost),
@@ -247,6 +257,8 @@ export function CashFlowTable({ data, appData }: CashFlowTableProps) {
         housingDetails,
         insuranceCost: Math.round(insuranceCost),
         insuranceDetails,
+        investmentContribution: Math.round(totalInvestmentContribution),
+        investmentContributionDetails,
         eventCost: Math.round(eventCost),
         eventNames: eventNames.join(', '),
         balance: Math.round(balance),
@@ -413,6 +425,7 @@ export function CashFlowTable({ data, appData }: CashFlowTableProps) {
               </td>
             </tr>
             {renderDetailRows('income', detailedData.map((d) => d.incomeDetails), '収入合計')}
+            {renderDetailRows('investmentWithdrawal', detailedData.map((d) => d.investmentWithdrawalDetails), '金融資産の取り崩し')}
 
             <tr className="bg-red-100">
               <td colSpan={detailedData.length + 1} className="px-3 py-1 font-bold text-xs text-red-800 sticky left-0 z-10">
@@ -423,6 +436,7 @@ export function CashFlowTable({ data, appData }: CashFlowTableProps) {
             {renderDetailRows('education', detailedData.map((d) => d.educationDetails), '教育費')}
             {renderDetailRows('housing', detailedData.map((d) => d.housingDetails), '住居費・ローン')}
             {renderDetailRows('insurance', detailedData.map((d) => d.insuranceDetails), '保険料')}
+            {renderDetailRows('investmentContribution', detailedData.map((d) => d.investmentContributionDetails), '金融資産の積み立て')}
 
             <tr className="bg-yellow-100">
               <td colSpan={detailedData.length + 1} className="px-3 py-1 font-bold text-xs text-yellow-800 sticky left-0 z-10">
