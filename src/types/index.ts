@@ -4,7 +4,7 @@ export interface UserSettings {
   gender: 'male' | 'female' | 'other';
   disability: 'none' | 'present';
   life_expectancy: number;
-  retirement_age: number;
+  simulation_end_age: number;
   current_savings: number;
 }
 

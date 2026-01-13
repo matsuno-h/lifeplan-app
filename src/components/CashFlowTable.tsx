@@ -50,7 +50,7 @@ export function CashFlowTable({ data, appData }: CashFlowTableProps) {
 
   const calculateDetailedData = (): RowData[] => {
     const results: RowData[] = [];
-    const endAge = appData.userSettings.life_expectancy || 85;
+    const endAge = appData.userSettings.simulation_end_age || 85;
     let cashBalance = appData.userSettings.current_savings || 0;
 
     const assetBalances: { [key: string]: number } = {};

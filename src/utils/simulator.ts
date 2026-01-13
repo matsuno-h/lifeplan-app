@@ -13,7 +13,7 @@ export function calculateCashFlow(data: AppData): CashFlowData[] {
     : 30;
 
   const startAge = currentAge;
-  const endAge = data.userSettings.life_expectancy || 85;
+  const endAge = data.userSettings.simulation_end_age || 85;
 
   let cashBalance = safeNum(data.userSettings.current_savings);
 

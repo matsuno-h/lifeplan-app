@@ -32,7 +32,7 @@ export function BasicSettingsTab({
       gender: formData.get('gender') as 'male' | 'female' | 'other',
       disability: formData.get('disability') as 'none' | 'present',
       life_expectancy: parseInt(formData.get('life_expectancy') as string) || 85,
-      retirement_age: parseInt(formData.get('retirement_age') as string),
+      simulation_end_age: parseInt(formData.get('simulation_end_age') as string),
       current_savings: parseInt(formData.get('current_savings') as string),
     });
   };
@@ -151,17 +151,17 @@ export function BasicSettingsTab({
             </div>
           </div>
           <div className="border-t pt-4 mt-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">退職年齢</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">シミュレーション終了年齢</label>
             <div className="flex items-center">
               <input
                 type="number"
-                name="retirement_age"
-                defaultValue={settings.retirement_age}
-                placeholder="65"
+                name="simulation_end_age"
+                defaultValue={settings.simulation_end_age}
+                placeholder="85"
                 className="flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2 text-sm"
                 required
                 min="0"
-                max="100"
+                max="120"
               />
               <span className="ml-2 text-gray-500 text-sm whitespace-nowrap">歳</span>
             </div>

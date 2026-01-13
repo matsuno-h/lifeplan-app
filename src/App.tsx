@@ -24,7 +24,7 @@ const initialData: AppData = {
     gender: 'male',
     disability: 'none',
     life_expectancy: 85,
-    retirement_age: 65,
+    simulation_end_age: 85,
     current_savings: 300,
   },
   incomes: [],
@@ -483,10 +483,11 @@ function AppContent() {
         ? new Date().getFullYear() - new Date(appData.userSettings.birth_date).getFullYear()
         : 30;
 
-      const retirementAge = appData.userSettings.retirement_age || 65;
+      const simulationEndAge = appData.userSettings.simulation_end_age || 85;
       const lifeExpectancy = appData.userSettings.life_expectancy || 85;
+      const retirementAge = 65;
       const yearsToRetirement = Math.max(0, retirementAge - currentAge);
-      const retirementYears = Math.max(0, lifeExpectancy - retirementAge);
+      const retirementYears = Math.max(0, simulationEndAge - retirementAge);
 
       const totalAssets = safeNum(appData.userSettings.current_savings) +
         appData.assets.reduce((sum, a) => sum + safeNum(a.current_value), 0) +
@@ -517,7 +518,7 @@ function AppContent() {
       const totalLoans = appData.loans.reduce((sum, l) => sum + safeNum(l.balance), 0);
 
       let advice = `■ あなたの現状\n`;
-      advice += `現在${currentAge}歳、${retirementAge}歳での退職、${lifeExpectancy}歳までの人生設計を想定しています。\n`;
+      advice += `現在${currentAge}歳、${simulationEndAge}歳までのシミュレーションを想定しています（想定寿命: ${lifeExpectancy}歳）。\n`;
       advice += `退職までの期間: ${yearsToRetirement}年、退職後の期間: ${retirementYears}年\n\n`;
 
       if (appData.goals.q1 || appData.goals.q2 || appData.goals.q3 || appData.goals.q4) {
@@ -588,7 +589,7 @@ function AppContent() {
       }
 
       advice += `■ シミュレーション結果\n`;
-      advice += `${lifeExpectancy}歳時点の予想資産: ${safeNum(finalBalance).toLocaleString()}万円\n`;
+      advice += `${simulationEndAge}歳時点の予想資産: ${safeNum(finalBalance).toLocaleString()}万円\n`;
 
       if (hasNegativeBalance) {
         const firstNegativeAge = cashFlowData.find(d => d.balance < 0)?.age;
