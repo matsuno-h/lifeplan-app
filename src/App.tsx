@@ -11,7 +11,7 @@ import { DetailsTab } from './components/tabs/DetailsTab';
 import { AssetsTab } from './components/tabs/AssetsTab';
 import { InsuranceTab } from './components/tabs/InsuranceTab';
 import { AdviceTab } from './components/tabs/AdviceTab';
-import { ShareSettingsTab } from './components/tabs/ShareSettingsTab';
+import { ShareSettingsModal } from './components/ShareSettingsModal';
 import { PlanDashboard } from './components/PlanDashboard';
 import { AssetChart } from './components/AssetChart';
 import { CashFlowTable } from './components/CashFlowTable';
@@ -82,6 +82,7 @@ function AppContent() {
   const [activeTab, setActiveTab] = useState('goals');
   const [advice, setAdvice] = useState('');
   const [isLoadingAdvice, setIsLoadingAdvice] = useState(false);
+  const [showShareSettings, setShowShareSettings] = useState(false);
 
   const handleSelectPlan = (planId: string, isOwner: boolean, permission: 'view' | 'edit' | 'owner') => {
     setSelectedPlan({ planId, isOwner, permission });
@@ -725,6 +726,7 @@ function AppContent() {
           onClear={handleClear}
           onShowDashboard={user ? handleBackToDashboard : undefined}
           currentPlanNumber={user ? planNumber : undefined}
+          onShowShareSettings={user ? () => setShowShareSettings(true) : undefined}
         />
 
         {!isSupabaseConfigured && (
@@ -868,13 +870,6 @@ function AppContent() {
               />
             )}
 
-            {activeTab === 'share' && (
-              <ShareSettingsTab
-                planId={planId}
-                isOwner={isOwner}
-                planNumber={planNumber}
-              />
-            )}
           </div>
 
           <div className="lg:col-span-8 space-y-6">
@@ -890,6 +885,15 @@ function AppContent() {
             </div>
           </div>
         </div>
+
+        {showShareSettings && (
+          <ShareSettingsModal
+            planId={planId}
+            isOwner={isOwner}
+            planNumber={planNumber}
+            onClose={() => setShowShareSettings(false)}
+          />
+        )}
       </div>
     </div>
   );

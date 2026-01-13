@@ -1,4 +1,4 @@
-import { Upload, Download, Trash2, TrendingUp, LogOut, User, LogIn, X, LayoutGrid, Settings } from 'lucide-react';
+import { Upload, Download, Trash2, TrendingUp, LogOut, User, LogIn, X, LayoutGrid, Settings, Share2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useState, useEffect } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
@@ -10,9 +10,10 @@ interface HeaderProps {
   onClear: () => void;
   onShowDashboard?: () => void;
   currentPlanNumber?: number;
+  onShowShareSettings?: () => void;
 }
 
-export function Header({ onExport, onImport, onClear, onShowDashboard, currentPlanNumber }: HeaderProps) {
+export function Header({ onExport, onImport, onClear, onShowDashboard, currentPlanNumber, onShowShareSettings }: HeaderProps) {
   const { user, signOut, signInWithEmail, signUpWithEmail } = useAuth();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showProfileSettings, setShowProfileSettings] = useState(false);
@@ -126,6 +127,15 @@ export function Header({ onExport, onImport, onClear, onShowDashboard, currentPl
                     <User className="h-4 w-4 text-gray-600" />
                     <span className="text-gray-700 font-medium">{userName || user.email}</span>
                   </div>
+                  {onShowShareSettings && (
+                    <button
+                      onClick={onShowShareSettings}
+                      className="text-gray-500 hover:text-blue-600 transition-colors"
+                      title="共有設定"
+                    >
+                      <Share2 className="h-4 w-4" />
+                    </button>
+                  )}
                   <button
                     onClick={() => setShowProfileSettings(true)}
                     className="text-gray-500 hover:text-blue-600 transition-colors"

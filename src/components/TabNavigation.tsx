@@ -12,7 +12,6 @@ const tabs = [
   { id: 'assets', label: '資産管理' },
   { id: 'insurance', label: '保険・年金' },
   { id: 'advice', label: '相談' },
-  { id: 'share', label: '共有設定' },
 ];
 
 export function TabNavigation({ activeTab, onTabChange }: TabNavigationProps) {
