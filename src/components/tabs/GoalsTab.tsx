@@ -13,8 +13,10 @@ export function GoalsTab({ goals, onUpdate }: GoalsTabProps) {
   const [formData, setFormData] = useState<Goals>(safeGoals);
 
   useEffect(() => {
-    setFormData(safeGoals);
-  }, [goals]);
+    if (goals) {
+      setFormData(goals);
+    }
+  }, [goals?.q1, goals?.q2, goals?.q3, goals?.q4]);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

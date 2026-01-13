@@ -130,7 +130,7 @@ export function useSupabaseData(initialData: AppData, options?: UseSupabaseDataO
       console.error('Error in loadDataFromSupabase:', error);
       setLoading(false);
     }
-  }, [user, options?.planId, options?.permission, saveDataToSupabase]);
+  }, [user, options?.planId, options?.permission, initialData]);
 
   useEffect(() => {
     loadDataFromSupabase();

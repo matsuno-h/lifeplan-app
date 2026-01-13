@@ -1,6 +1,6 @@
 import { Settings, Users, Edit2, Trash2, ChevronUp, ChevronDown } from 'lucide-react';
 import { UserSettings, FamilyMember } from '../../types';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface BasicSettingsTabProps {
   settings: UserSettings;
@@ -22,19 +22,15 @@ export function BasicSettingsTab({
   onFamilyReorder,
 }: BasicSettingsTabProps) {
   const [editingFamilyId, setEditingFamilyId] = useState<string | null>(null);
+  const [formSettings, setFormSettings] = useState<UserSettings>(settings);
+
+  useEffect(() => {
+    setFormSettings(settings);
+  }, [settings]);
 
   const handleSettingsSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    onSettingsUpdate({
-      user_name: formData.get('user_name') as string,
-      birth_date: formData.get('birth_date') as string,
-      gender: formData.get('gender') as 'male' | 'female' | 'other',
-      disability: formData.get('disability') as 'none' | 'present',
-      life_expectancy: parseInt(formData.get('life_expectancy') as string) || 85,
-      simulation_end_age: parseInt(formData.get('simulation_end_age') as string),
-      current_savings: parseInt(formData.get('current_savings') as string),
-    });
+    onSettingsUpdate(formSettings);
   };
 
   const handleFamilySubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -94,7 +90,8 @@ export function BasicSettingsTab({
             <input
               type="text"
               name="user_name"
-              defaultValue={settings.user_name}
+              value={formSettings.user_name}
+              onChange={(e) => setFormSettings({ ...formSettings, user_name: e.target.value })}
               placeholder="例: 山田 太郎"
               className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2 text-sm"
               required
@@ -106,7 +103,8 @@ export function BasicSettingsTab({
               <input
                 type="date"
                 name="birth_date"
-                defaultValue={settings.birth_date}
+                value={formSettings.birth_date}
+                onChange={(e) => setFormSettings({ ...formSettings, birth_date: e.target.value })}
                 className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2 text-sm"
                 required
               />
@@ -115,7 +113,8 @@ export function BasicSettingsTab({
               <label className="block text-sm font-medium text-gray-700 mb-1">性別</label>
               <select
                 name="gender"
-                defaultValue={settings.gender}
+                value={formSettings.gender}
+                onChange={(e) => setFormSettings({ ...formSettings, gender: e.target.value as 'male' | 'female' | 'other' })}
                 className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2 text-sm"
               >
                 <option value="male">男性</option>
@@ -129,7 +128,8 @@ export function BasicSettingsTab({
               <label className="block text-sm font-medium text-gray-700 mb-1">障害</label>
               <select
                 name="disability"
-                defaultValue={settings.disability}
+                value={formSettings.disability}
+                onChange={(e) => setFormSettings({ ...formSettings, disability: e.target.value as 'none' | 'present' })}
                 className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2 text-sm"
               >
                 <option value="none">なし</option>
@@ -142,7 +142,8 @@ export function BasicSettingsTab({
                 <input
                   type="number"
                   name="life_expectancy"
-                  defaultValue={settings.life_expectancy}
+                  value={formSettings.life_expectancy}
+                  onChange={(e) => setFormSettings({ ...formSettings, life_expectancy: parseInt(e.target.value) || 85 })}
                   placeholder="85"
                   className="flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2 text-sm"
                 />
@@ -156,7 +157,8 @@ export function BasicSettingsTab({
               <input
                 type="number"
                 name="simulation_end_age"
-                defaultValue={settings.simulation_end_age}
+                value={formSettings.simulation_end_age}
+                onChange={(e) => setFormSettings({ ...formSettings, simulation_end_age: parseInt(e.target.value) || 85 })}
                 placeholder="85"
                 className="flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2 text-sm"
                 required
@@ -174,7 +176,8 @@ export function BasicSettingsTab({
               <input
                 type="number"
                 name="current_savings"
-                defaultValue={settings.current_savings}
+                value={formSettings.current_savings}
+                onChange={(e) => setFormSettings({ ...formSettings, current_savings: parseInt(e.target.value) || 0 })}
                 placeholder="300"
                 className="flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2 text-sm"
                 required
