@@ -40,6 +40,8 @@ export function PlanDashboard({ onSelectPlan, onCreateNew }: PlanDashboardProps)
 
       if (collaborations && collaborations.length > 0) {
         const planIds = collaborations.map(c => c.plan_id);
+        const ownerIds = [...new Set(collaborations.map(c => c.owner_id))];
+
         const { data: sharedPlanData, error: sharedError } = await supabase
           .from('user_life_plans')
           .select('*')
@@ -47,11 +49,21 @@ export function PlanDashboard({ onSelectPlan, onCreateNew }: PlanDashboardProps)
 
         if (sharedError) throw sharedError;
 
+        const { data: ownersData, error: ownersError } = await supabase
+          .rpc('get_user_emails', { user_ids: ownerIds });
+
+        if (ownersError) {
+          console.error('Error fetching owners:', ownersError);
+        }
+
+        const ownersMap = new Map((ownersData || []).map((owner: { id: string; email: string }) => [owner.id, owner.email]));
+
         const sharedWithPermissions = (sharedPlanData || []).map(plan => {
           const collab = collaborations.find(c => c.plan_id === plan.id);
+          const ownerEmail = ownersMap.get(collab?.owner_id || '') || '不明';
           return {
             ...plan,
-            owner_email: `ユーザー`,
+            owner_email: ownerEmail,
             permission: collab?.permission || 'view',
           };
         });
@@ -187,7 +199,7 @@ export function PlanDashboard({ onSelectPlan, onCreateNew }: PlanDashboardProps)
                     </div>
                     <div>
                       <h3 className="font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">
-                        {getPlanTitle(plan)}
+                        {plan.owner_email} - プラン {plan.plan_number}
                       </h3>
                       <div className="flex items-center gap-2 mt-1">
                         <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${
