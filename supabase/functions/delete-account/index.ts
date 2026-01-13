@@ -52,37 +52,12 @@ Deno.serve(async (req: Request) => {
 
     const userId = user.id;
 
-    // Delete user's life plans (cascades to collaborators)
-    const { error: plansError } = await supabaseAdmin
-      .from("user_life_plans")
-      .delete()
-      .eq("user_id", userId);
-
-    if (plansError) {
-      console.error("Error deleting plans:", plansError);
-    }
-
-    // Delete collaborator entries where user is a collaborator
-    const { error: collabError } = await supabaseAdmin
-      .from("plan_collaborators")
-      .delete()
-      .eq("collaborator_id", userId);
-
-    if (collabError) {
-      console.error("Error deleting collaborator entries:", collabError);
-    }
-
-    // Delete user profile
-    const { error: profileError } = await supabaseAdmin
-      .from("user_profiles")
-      .delete()
-      .eq("user_id", userId);
-
-    if (profileError) {
-      console.error("Error deleting profile:", profileError);
-    }
-
-    // Finally, delete the auth user
+    // Delete the auth user - all related data will be cascade deleted automatically
+    // due to ON DELETE CASCADE constraints on:
+    // - user_profiles.user_id
+    // - user_life_plans.user_id
+    // - plan_collaborators.owner_id
+    // - plan_collaborators.collaborator_id
     const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
 
     if (deleteError) {
