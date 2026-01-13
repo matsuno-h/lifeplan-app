@@ -1,4 +1,4 @@
-import { Upload, Download, Trash2, TrendingUp, LogOut, User, LogIn, X, LayoutGrid, Settings, Share2 } from 'lucide-react';
+import { Upload, Download, Trash2, LogOut, User, LogIn, X, LayoutGrid, Settings, Share2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useState, useEffect } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
@@ -99,17 +99,15 @@ export function Header({ onExport, onImport, onClear, onShowDashboard, currentPl
     <>
       <header className="mb-8">
         <div className="flex justify-between items-start mb-4">
-          <div className="flex-1"></div>
-          <div className="text-center flex-1">
-            <h1 className="text-3xl font-bold text-blue-800 mb-2 flex items-center justify-center">
-              <TrendingUp className="mr-2" />
+          <div>
+            <h1 className="text-3xl font-bold text-blue-800 mb-2">
               ライフプラン シミュレーター
             </h1>
             {currentPlanNumber && (
               <p className="text-gray-600 font-medium">現在表示中のプラン：{currentPlanNumber}</p>
             )}
           </div>
-          <div className="flex-1 flex justify-end items-start gap-2">
+          <div className="flex justify-end items-start gap-2">
             {user ? (
               <>
                 {onShowDashboard && (
