@@ -58,10 +58,24 @@ export function LoanBalanceTable({ appData }: LoanBalanceTableProps) {
       appData.realEstates.forEach((realEstate: RealEstate) => {
         if (realEstate.loan_amount && realEstate.loan_payments) {
           if (age >= realEstate.purchase_age) {
-            const yearsFromPurchase = age - realEstate.purchase_age;
-            const totalPaid = realEstate.loan_payments * 12 * yearsFromPurchase;
-            const remainingBalance = realEstate.loan_amount - totalPaid;
-            loanBalances[`re_${realEstate.id}`] = Math.max(0, remainingBalance);
+            const monthsFromPurchase = (age - realEstate.purchase_age) * 12;
+
+            if (realEstate.loan_rate && realEstate.loan_term_months) {
+              const monthlyRate = realEstate.loan_rate / 100 / 12;
+              let balance = realEstate.loan_amount;
+
+              for (let month = 0; month < monthsFromPurchase && balance > 0; month++) {
+                const interest = balance * monthlyRate;
+                const principal = realEstate.loan_payments - interest;
+                balance -= principal;
+              }
+
+              loanBalances[`re_${realEstate.id}`] = Math.max(0, balance);
+            } else {
+              const totalPaid = realEstate.loan_payments * monthsFromPurchase;
+              const remainingBalance = realEstate.loan_amount - totalPaid;
+              loanBalances[`re_${realEstate.id}`] = Math.max(0, remainingBalance);
+            }
           }
         }
       });

@@ -211,17 +211,17 @@ export function CashFlowTable({ data, appData }: CashFlowTableProps) {
 
       appData.realEstates.forEach((property) => {
         if (age >= property.purchase_age) {
-          if (property.rent_income) {
-            incomeDetails[`${property.name} (賃料)`] = property.rent_income * 12;
-            totalIncome += property.rent_income * 12;
+          if (property.monthly_rent_income) {
+            incomeDetails[`${property.name} (賃料)`] = property.monthly_rent_income * 12;
+            totalIncome += property.monthly_rent_income * 12;
           }
-          if (property.maintenance_cost) {
-            housingDetails[`${property.name} (管理費)`] = property.maintenance_cost * 12;
-            housingCost += property.maintenance_cost * 12;
+          if (property.monthly_maintenance_cost) {
+            housingDetails[`${property.name} (管理費)`] = property.monthly_maintenance_cost * 12;
+            housingCost += property.monthly_maintenance_cost * 12;
           }
-          if (property.tax) {
-            housingDetails[`${property.name} (税金)`] = property.tax;
-            housingCost += property.tax;
+          if (property.annual_property_tax) {
+            housingDetails[`${property.name} (税金)`] = property.annual_property_tax;
+            housingCost += property.annual_property_tax;
           }
           if (property.loan_payments) {
             housingDetails[`${property.name} (ローン)`] = property.loan_payments * 12;

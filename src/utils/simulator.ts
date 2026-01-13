@@ -128,11 +128,31 @@ export function calculateCashFlow(data: AppData): CashFlowData[] {
     });
 
     data.realEstates.forEach((property) => {
+      if (age === property.purchase_age) {
+        yearlyExpense += safeNum(property.purchase_price);
+        if (property.initial_cost) yearlyExpense += safeNum(property.initial_cost);
+        if (property.loan_amount) yearlyIncome += safeNum(property.loan_amount);
+      }
+
       if (age >= property.purchase_age) {
-        if (property.rent_income) yearlyIncome += safeNum(property.rent_income) * 12;
-        if (property.maintenance_cost) yearlyExpense += safeNum(property.maintenance_cost) * 12;
-        if (property.tax) yearlyExpense += safeNum(property.tax);
+        if (property.monthly_rent_income) yearlyIncome += safeNum(property.monthly_rent_income) * 12;
+        if (property.monthly_maintenance_cost) yearlyExpense += safeNum(property.monthly_maintenance_cost) * 12;
+        if (property.annual_property_tax) yearlyExpense += safeNum(property.annual_property_tax);
         if (property.loan_payments) yearlyExpense += safeNum(property.loan_payments) * 12;
+      }
+
+      if (property.sale_date) {
+        const saleYear = new Date(property.sale_date).getFullYear();
+        const saleAge = age - (currentYear - saleYear);
+        if (age === saleAge) {
+          if (property.sale_price) yearlyIncome += safeNum(property.sale_price);
+          if (property.sale_cost) yearlyExpense += safeNum(property.sale_cost);
+          if (property.loan_amount && property.loan_payments) {
+            const monthsElapsed = (saleAge - property.purchase_age) * 12;
+            const remainingBalance = Math.max(0, safeNum(property.loan_amount) - safeNum(property.loan_payments) * monthsElapsed);
+            yearlyExpense += remainingBalance;
+          }
+        }
       }
     });
 

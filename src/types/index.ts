@@ -102,19 +102,20 @@ export interface Asset {
 export interface RealEstate {
   id: string;
   name: string;
-  purchase_price: number;
-  current_value: number;
+  purchase_date: string;
   purchase_age: number;
+  purchase_price: number;
   initial_cost?: number;
   loan_amount?: number;
   loan_rate?: number;
+  loan_term_months?: number;
   loan_payments?: number;
-  rent_income?: number;
-  maintenance_cost?: number;
-  tax?: number;
-  sell_date?: string;
-  sell_price?: number;
-  sell_cost?: number;
+  monthly_rent_income?: number;
+  monthly_maintenance_cost?: number;
+  annual_property_tax?: number;
+  sale_date?: string;
+  sale_price?: number;
+  sale_cost?: number;
 }
 
 export interface Loan {

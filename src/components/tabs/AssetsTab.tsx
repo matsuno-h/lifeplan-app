@@ -69,16 +69,20 @@ export function AssetsTab({
     const formData = new FormData(e.currentTarget);
     const realEstate = {
       name: formData.get('re_name') as string,
-      purchase_price: parseInt(formData.get('re_price') as string) || 0,
-      current_value: parseInt(formData.get('re_price') as string) || 0,
+      purchase_date: formData.get('re_purchase_date') as string,
       purchase_age: parseInt(formData.get('re_purchase_age') as string) || 30,
+      purchase_price: parseInt(formData.get('re_price') as string) || 0,
       initial_cost: parseInt(formData.get('re_initial_cost') as string) || undefined,
       loan_amount: parseInt(formData.get('re_loan_amount') as string) || undefined,
       loan_rate: parseFloat(formData.get('re_loan_rate') as string) || undefined,
+      loan_term_months: parseInt(formData.get('re_loan_term_months') as string) || undefined,
       loan_payments: parseInt(formData.get('re_loan_payments') as string) || undefined,
-      rent_income: parseInt(formData.get('re_rent_income') as string) || undefined,
-      maintenance_cost: parseInt(formData.get('re_maintenance_cost') as string) || undefined,
-      tax: parseInt(formData.get('re_tax') as string) || undefined,
+      monthly_rent_income: parseInt(formData.get('re_rent_income') as string) || undefined,
+      monthly_maintenance_cost: parseInt(formData.get('re_maintenance_cost') as string) || undefined,
+      annual_property_tax: parseInt(formData.get('re_tax') as string) || undefined,
+      sale_date: (formData.get('re_sale_date') as string) || undefined,
+      sale_price: parseInt(formData.get('re_sale_price') as string) || undefined,
+      sale_cost: parseInt(formData.get('re_sale_cost') as string) || undefined,
     };
 
     if (editingRealEstateId) {
@@ -95,9 +99,20 @@ export function AssetsTab({
     const form = document.getElementById('realestate-form') as HTMLFormElement;
     if (form) {
       (form.elements.namedItem('re_name') as HTMLInputElement).value = re.name;
-      (form.elements.namedItem('re_price') as HTMLInputElement).value = re.purchase_price.toString();
+      (form.elements.namedItem('re_purchase_date') as HTMLInputElement).value = re.purchase_date || '';
       (form.elements.namedItem('re_purchase_age') as HTMLInputElement).value = re.purchase_age.toString();
-      (form.elements.namedItem('re_rent_income') as HTMLInputElement).value = re.rent_income?.toString() || '';
+      (form.elements.namedItem('re_price') as HTMLInputElement).value = re.purchase_price.toString();
+      (form.elements.namedItem('re_initial_cost') as HTMLInputElement).value = re.initial_cost?.toString() || '';
+      (form.elements.namedItem('re_loan_amount') as HTMLInputElement).value = re.loan_amount?.toString() || '';
+      (form.elements.namedItem('re_loan_rate') as HTMLInputElement).value = re.loan_rate?.toString() || '';
+      (form.elements.namedItem('re_loan_term_months') as HTMLInputElement).value = re.loan_term_months?.toString() || '';
+      (form.elements.namedItem('re_loan_payments') as HTMLInputElement).value = re.loan_payments?.toString() || '';
+      (form.elements.namedItem('re_rent_income') as HTMLInputElement).value = re.monthly_rent_income?.toString() || '';
+      (form.elements.namedItem('re_maintenance_cost') as HTMLInputElement).value = re.monthly_maintenance_cost?.toString() || '';
+      (form.elements.namedItem('re_tax') as HTMLInputElement).value = re.annual_property_tax?.toString() || '';
+      (form.elements.namedItem('re_sale_date') as HTMLInputElement).value = re.sale_date || '';
+      (form.elements.namedItem('re_sale_price') as HTMLInputElement).value = re.sale_price?.toString() || '';
+      (form.elements.namedItem('re_sale_cost') as HTMLInputElement).value = re.sale_cost?.toString() || '';
     }
   };
 
@@ -328,6 +343,18 @@ export function AssetsTab({
               />
             </div>
             <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">購入年月</label>
+              <input
+                type="month"
+                name="re_purchase_date"
+                placeholder="2025-01"
+                className="w-full rounded-md border-gray-300 border p-2 text-sm"
+                required
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">購入価格</label>
               <div className="flex items-center">
                 <input
@@ -335,12 +362,23 @@ export function AssetsTab({
                   name="re_price"
                   placeholder="2000"
                   className="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm"
+                  required
                 />
                 <span className="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
               </div>
             </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">初期費用</label>
+              <div className="flex items-center">
+                <input
+                  type="number"
+                  name="re_initial_cost"
+                  placeholder="100"
+                  className="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm"
+                />
+                <span className="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
+              </div>
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">購入年齢</label>
               <div className="flex items-center">
@@ -349,27 +387,155 @@ export function AssetsTab({
                   name="re_purchase_age"
                   placeholder="30"
                   className="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm"
+                  required
                 />
                 <span className="ml-2 text-gray-500 text-sm whitespace-nowrap">歳</span>
               </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">家賃収入 (月額)</label>
-              <div className="flex items-center">
-                <input
-                  type="number"
-                  name="re_rent_income"
-                  placeholder="8"
-                  className="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm"
-                />
-                <span className="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
+          </div>
+
+          <div className="p-3 bg-blue-50 rounded space-y-3">
+            <p className="text-xs font-bold text-gray-700">ローン設定 (任意)</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">借入額</label>
+                <div className="flex items-center">
+                  <input
+                    type="number"
+                    name="re_loan_amount"
+                    placeholder="1800"
+                    className="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm"
+                  />
+                  <span className="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">金利</label>
+                <div className="flex items-center">
+                  <input
+                    type="number"
+                    name="re_loan_rate"
+                    placeholder="2.5"
+                    step="0.1"
+                    className="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm"
+                  />
+                  <span className="ml-2 text-gray-500 text-sm whitespace-nowrap">%</span>
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">返済回数</label>
+                <div className="flex items-center">
+                  <input
+                    type="number"
+                    name="re_loan_term_months"
+                    placeholder="420"
+                    className="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm"
+                  />
+                  <span className="ml-2 text-gray-500 text-sm whitespace-nowrap">回</span>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">月額返済額</label>
+                <div className="flex items-center">
+                  <input
+                    type="number"
+                    name="re_loan_payments"
+                    placeholder="5"
+                    className="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm"
+                  />
+                  <span className="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
+                </div>
               </div>
             </div>
           </div>
+
+          <div className="p-3 bg-green-50 rounded space-y-3">
+            <p className="text-xs font-bold text-gray-700">運用収支・税金</p>
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">家賃収入 (月額)</label>
+                <div className="flex items-center">
+                  <input
+                    type="number"
+                    name="re_rent_income"
+                    placeholder="8"
+                    className="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm"
+                  />
+                  <span className="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">維持管理費 (月額)</label>
+                <div className="flex items-center">
+                  <input
+                    type="number"
+                    name="re_maintenance_cost"
+                    placeholder="2"
+                    className="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm"
+                  />
+                  <span className="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">固定資産税 (年額)</label>
+                <div className="flex items-center">
+                  <input
+                    type="number"
+                    name="re_tax"
+                    placeholder="10"
+                    className="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm"
+                  />
+                  <span className="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-3 bg-gray-50 rounded space-y-3">
+            <p className="text-xs font-bold text-gray-500">売却設定 (任意)</p>
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">売却年月</label>
+                <input
+                  type="month"
+                  name="re_sale_date"
+                  placeholder="2035-01"
+                  className="w-full rounded-md border-gray-300 border p-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">売却価格</label>
+                <div className="flex items-center">
+                  <input
+                    type="number"
+                    name="re_sale_price"
+                    placeholder="1800"
+                    className="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm"
+                  />
+                  <span className="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">売却諸経費</label>
+                <div className="flex items-center">
+                  <input
+                    type="number"
+                    name="re_sale_cost"
+                    placeholder="60"
+                    className="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm"
+                  />
+                  <span className="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div className="flex space-x-2">
             <button
               type="submit"
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 rounded text-sm"
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 rounded text-sm mt-1"
             >
               {editingRealEstateId ? '更新' : '追加'}
             </button>
@@ -380,7 +546,7 @@ export function AssetsTab({
                   setEditingRealEstateId(null);
                   (document.getElementById('realestate-form') as HTMLFormElement)?.reset();
                 }}
-                className="flex-1 bg-gray-400 hover:bg-gray-500 text-white font-bold py-1.5 rounded text-sm"
+                className="flex-1 bg-gray-400 hover:bg-gray-500 text-white font-bold py-1.5 rounded text-sm mt-1"
               >
                 中止
               </button>
@@ -393,16 +559,35 @@ export function AssetsTab({
           ) : (
             realEstates.map((re, index) => (
               <li key={re.id} className="p-2 hover:bg-gray-50">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <span className="font-medium">{re.name}</span>
-                    <span className="text-gray-600 ml-2">{re.purchase_price}万円</span>
-                    <span className="text-gray-500 ml-2">{re.purchase_age}歳購入</span>
-                    {re.rent_income && (
-                      <span className="text-gray-500 ml-2">家賃{re.rent_income}万円/月</span>
-                    )}
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <div>
+                      <span className="font-medium">{re.name}</span>
+                      <span className="text-gray-600 ml-2">{re.purchase_price}万円</span>
+                      <span className="text-gray-500 ml-2">{re.purchase_age}歳購入</span>
+                      {re.purchase_date && (
+                        <span className="text-gray-400 ml-2 text-xs">({re.purchase_date})</span>
+                      )}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1 space-x-2">
+                      {re.loan_amount && (
+                        <span>ローン{re.loan_amount}万円</span>
+                      )}
+                      {re.monthly_rent_income && (
+                        <span>家賃{re.monthly_rent_income}万円/月</span>
+                      )}
+                      {re.monthly_maintenance_cost && (
+                        <span>維持費{re.monthly_maintenance_cost}万円/月</span>
+                      )}
+                      {re.annual_property_tax && (
+                        <span>固定資産税{re.annual_property_tax}万円/年</span>
+                      )}
+                      {re.sale_date && (
+                        <span>売却予定{re.sale_date}</span>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 ml-2">
                     {index > 0 && (
                       <button
                         onClick={() => onReorder(re.id, 'realEstate', 'up')}
