@@ -721,7 +721,7 @@ function AppContent() {
           onImport={handleImport}
           onClear={handleClear}
           onShowDashboard={user ? handleBackToDashboard : undefined}
-          currentPlanNumber={user && !selectedPlan ? planNumber : undefined}
+          currentPlanNumber={user ? planNumber : undefined}
         />
 
         {!user && (
