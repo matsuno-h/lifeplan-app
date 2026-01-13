@@ -282,24 +282,83 @@ export function CashFlowTable({ data, appData }: CashFlowTableProps) {
   };
 
   const handleDownloadCSV = () => {
-    const headers = ['西暦', '年齢', ...appData.familyMembers.map((m) => m.name), '収入', '基本生活費', '教育費', '住居費', '保険料', 'イベント費用', '年間収支', '預金残高', '金融資産残高', '総資産残高'];
-    const rows = detailedData.map((d) => [
-      d.year,
-      d.age,
-      ...appData.familyMembers.map((m) => d.familyAges[m.id] ?? '-'),
-      d.income,
-      d.basicExpenses,
-      d.educationCost,
-      d.housingCost,
-      d.insuranceCost,
-      d.eventCost,
-      d.balance,
-      d.cashBalance,
-      d.investmentBalance,
-      d.savings,
-    ]);
+    const csvRows: string[] = [];
 
-    const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const yearRow = ['西暦', ...detailedData.map(d => d.year.toString())];
+    csvRows.push(yearRow.join(','));
+
+    csvRows.push('家族情報');
+
+    const userAgeRow = [`${appData.userSettings.user_name || '本人'} (本人)`, ...detailedData.map(d => `${d.age}歳`)];
+    csvRows.push(userAgeRow.join(','));
+
+    appData.familyMembers
+      .filter(member => member.relation !== 'self')
+      .forEach(member => {
+        const memberRow = [
+          `${member.name} (${getRelationLabel(member.relation)})`,
+          ...detailedData.map(d => d.familyAges[member.id] !== null ? `${d.familyAges[member.id]}歳` : '-')
+        ];
+        csvRows.push(memberRow.join(','));
+      });
+
+    csvRows.push('');
+    csvRows.push('収入');
+
+    const incomeRow = ['収入合計', ...detailedData.map(d => d.income > 0 ? d.income.toString() : '-')];
+    csvRows.push(incomeRow.join(','));
+
+    const withdrawalRow = ['金融資産取崩', ...detailedData.map(d => d.investmentWithdrawal > 0 ? d.investmentWithdrawal.toString() : '-')];
+    csvRows.push(withdrawalRow.join(','));
+
+    csvRows.push('');
+    csvRows.push('支出');
+
+    const basicExpRow = ['基本生活費', ...detailedData.map(d => d.basicExpenses > 0 ? d.basicExpenses.toString() : '-')];
+    csvRows.push(basicExpRow.join(','));
+
+    const eduRow = ['教育費', ...detailedData.map(d => d.educationCost > 0 ? d.educationCost.toString() : '-')];
+    csvRows.push(eduRow.join(','));
+
+    const housingRow = ['住居費・ローン', ...detailedData.map(d => d.housingCost > 0 ? d.housingCost.toString() : '-')];
+    csvRows.push(housingRow.join(','));
+
+    const insuranceRow = ['保険料', ...detailedData.map(d => d.insuranceCost > 0 ? d.insuranceCost.toString() : '-')];
+    csvRows.push(insuranceRow.join(','));
+
+    const contributionRow = ['金融資産積立', ...detailedData.map(d => d.investmentContribution > 0 ? d.investmentContribution.toString() : '-')];
+    csvRows.push(contributionRow.join(','));
+
+    csvRows.push('');
+    csvRows.push('イベント');
+
+    const eventNameRow = ['イベント内容', ...detailedData.map(d => d.eventNames || '-')];
+    csvRows.push(eventNameRow.join(','));
+
+    const eventCostRow = ['イベント費用', ...detailedData.map(d => {
+      if (d.eventCost !== 0) {
+        return d.eventCost < 0 ? `+${Math.abs(d.eventCost)}` : `-${d.eventCost}`;
+      }
+      return '-';
+    })];
+    csvRows.push(eventCostRow.join(','));
+
+    csvRows.push('');
+    csvRows.push('資産推移');
+
+    const balanceRow = ['年間収支', ...detailedData.map(d => d.balance.toString())];
+    csvRows.push(balanceRow.join(','));
+
+    const cashRow = ['預金残高', ...detailedData.map(d => d.cashBalance.toString())];
+    csvRows.push(cashRow.join(','));
+
+    const investmentRow = ['金融資産残高', ...detailedData.map(d => d.investmentBalance.toString())];
+    csvRows.push(investmentRow.join(','));
+
+    const totalRow = ['総資産残高', ...detailedData.map(d => d.savings.toString())];
+    csvRows.push(totalRow.join(','));
+
+    const csv = csvRows.join('\n');
     const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
