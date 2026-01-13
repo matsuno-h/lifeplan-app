@@ -140,14 +140,17 @@ export function ProfileSettings({ onClose }: ProfileSettingsProps) {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || 'Failed to delete account');
+        const errorMessage = result.details || result.error || 'Failed to delete account';
+        console.error('Delete account error details:', result);
+        throw new Error(errorMessage);
       }
 
       await supabase.auth.signOut();
       window.location.href = '/';
     } catch (err: unknown) {
       console.error('Error deleting account:', err);
-      setError('アカウントの削除に失敗しました');
+      const errorMessage = err instanceof Error ? err.message : 'アカウントの削除に失敗しました';
+      setError(`アカウントの削除に失敗しました: ${errorMessage}`);
       setDeleting(false);
       setShowDeleteConfirm(false);
     }
