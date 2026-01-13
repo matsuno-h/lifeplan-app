@@ -35,6 +35,7 @@ interface RowData {
 }
 
 export function CashFlowTable({ data, appData }: CashFlowTableProps) {
+  const [isExpanded, setIsExpanded] = useState(true);
   const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({});
 
   if (!data || data.length === 0 || !appData) {
@@ -436,16 +437,32 @@ export function CashFlowTable({ data, appData }: CashFlowTableProps) {
 
   return (
     <div>
-      <div className="flex justify-end mb-2">
-        <button
-          onClick={handleDownloadCSV}
-          className="text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 py-1 px-3 rounded flex items-center"
-        >
-          <Download className="h-4 w-4 mr-1" />
-          CSV保存
-        </button>
+      <div
+        className="flex items-center cursor-pointer hover:bg-gray-50 p-2 rounded mb-2"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        {isExpanded ? (
+          <ChevronDown className="h-5 w-5 mr-2 text-gray-600" />
+        ) : (
+          <ChevronRight className="h-5 w-5 mr-2 text-gray-600" />
+        )}
+        <h3 className="text-lg font-semibold text-gray-800 flex-1">キャッシュフロー表</h3>
+        {isExpanded && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDownloadCSV();
+            }}
+            className="text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 py-1 px-3 rounded flex items-center"
+          >
+            <Download className="h-4 w-4 mr-1" />
+            CSV保存
+          </button>
+        )}
       </div>
-      <div className="overflow-x-auto max-h-[600px] border rounded">
+
+      {isExpanded && (
+        <div className="overflow-x-auto max-h-[600px] border rounded">
         <table className="min-w-full text-sm border-collapse">
           <thead className="bg-gray-100 sticky top-0 z-20">
             <tr>
@@ -584,9 +601,13 @@ export function CashFlowTable({ data, appData }: CashFlowTableProps) {
           </tbody>
         </table>
       </div>
-      <div className="mt-2 text-xs text-gray-500 text-center py-2">
-        単位：万円 / 項目をクリックすると詳細を表示
-      </div>
+      )}
+
+      {isExpanded && (
+        <div className="mt-2 text-xs text-gray-500 text-center py-2">
+          単位：万円 / 項目をクリックすると詳細を表示
+        </div>
+      )}
     </div>
   );
 }

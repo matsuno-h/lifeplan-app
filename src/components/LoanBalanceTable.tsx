@@ -20,7 +20,7 @@ interface LoanItem {
 }
 
 export function LoanBalanceTable({ appData }: LoanBalanceTableProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
 
   const hasLoans = appData?.loans?.length > 0;
   const hasRealEstateLoans = appData?.realEstates?.some(re => re.loan_amount && re.loan_payments);

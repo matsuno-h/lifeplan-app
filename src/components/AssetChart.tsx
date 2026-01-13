@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { ChevronRight, ChevronDown } from 'lucide-react';
 import { Chart } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -34,6 +36,8 @@ interface AssetChartProps {
 }
 
 export function AssetChart({ data }: AssetChartProps) {
+  const [isExpanded, setIsExpanded] = useState(true);
+
   if (!data || data.length === 0) {
     return (
       <div className="flex items-center justify-center h-96 bg-gray-100 rounded">
@@ -147,8 +151,24 @@ export function AssetChart({ data }: AssetChartProps) {
   };
 
   return (
-    <div className="relative" style={{ height: '400px', width: '100%' }}>
-      <Chart type='bar' data={chartData} options={options} />
+    <div>
+      <div
+        className="flex items-center cursor-pointer hover:bg-gray-50 p-2 rounded mb-2"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        {isExpanded ? (
+          <ChevronDown className="h-5 w-5 mr-2 text-gray-600" />
+        ) : (
+          <ChevronRight className="h-5 w-5 mr-2 text-gray-600" />
+        )}
+        <h3 className="text-lg font-semibold text-gray-800">資産推移シミュレーション</h3>
+      </div>
+
+      {isExpanded && (
+        <div className="relative" style={{ height: '400px', width: '100%' }}>
+          <Chart type='bar' data={chartData} options={options} />
+        </div>
+      )}
     </div>
   );
 }
