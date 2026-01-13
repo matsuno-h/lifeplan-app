@@ -893,6 +893,29 @@ function AppContent() {
           />
         )}
       </div>
+
+      <footer className="bg-white border-t border-gray-200 mt-12">
+        <div className="container mx-auto px-4 py-6">
+          <div className="flex justify-center items-center gap-6 text-sm text-gray-600">
+            <a
+              href="https://edulio.notion.site/lifeplansimulator-aup/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-blue-600 transition-colors"
+            >
+              利用規約
+            </a>
+            <a
+              href="https://manapla.net/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-blue-600 transition-colors"
+            >
+              ©︎まなぷら. ALL Rights Reserved
+            </a>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

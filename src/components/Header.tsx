@@ -101,7 +101,7 @@ export function Header({ onExport, onImport, onClear, onShowDashboard, currentPl
         <div className="flex justify-between items-start mb-4">
           <div>
             <h1 className="text-3xl font-bold text-blue-800 mb-2">
-              ライフプラン シミュレーター
+              ライフプラン シミュレーター（β版）
             </h1>
             {currentPlanNumber && (
               <p className="text-gray-600 font-medium">現在表示中のプラン：{currentPlanNumber}</p>
