@@ -158,7 +158,13 @@ function AppContent() {
           pensions: Array.isArray(data.pensions) ? data.pensions : [],
           educationFunds: Array.isArray(data.educationFunds) ? data.educationFunds : [],
           housings: Array.isArray(data.housings) ? data.housings : [],
-          assets: Array.isArray(data.assets) ? data.assets : [],
+          assets: Array.isArray(data.assets)
+            ? data.assets.map((asset: any) => ({
+                ...asset,
+                asset_type: asset.asset_type || '投資信託',
+                contribution_end_age: asset.contribution_end_age,
+              }))
+            : [],
           realEstates: Array.isArray(data.realEstates) ? data.realEstates : [],
           loans: Array.isArray(data.loans) ? data.loans : [],
           goals: {
