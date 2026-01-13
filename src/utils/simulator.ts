@@ -5,6 +5,18 @@ const safeNum = (val: number | undefined | null): number => {
   return (isNaN(num) || !isFinite(num)) ? 0 : num;
 };
 
+const calculateMonthlyPayment = (principal: number, annualRate: number, months: number): number => {
+  if (months <= 0 || annualRate === 0) return principal / months || 0;
+  const monthlyRate = annualRate / 100 / 12;
+  return principal * (monthlyRate * Math.pow(1 + monthlyRate, months)) / (Math.pow(1 + monthlyRate, months) - 1);
+};
+
+const calculatePurchaseAge = (purchaseDate: string, birthDate: string, currentAge: number, currentYear: number): number => {
+  const purchaseYear = new Date(purchaseDate + '-01').getFullYear();
+  const birthYear = new Date(birthDate).getFullYear();
+  return purchaseYear - birthYear;
+};
+
 export function calculateCashFlow(data: AppData): CashFlowData[] {
   const results: CashFlowData[] = [];
   const currentYear = new Date().getFullYear();
@@ -128,29 +140,55 @@ export function calculateCashFlow(data: AppData): CashFlowData[] {
     });
 
     data.realEstates.forEach((property) => {
-      if (age === property.purchase_age) {
+      const purchaseAge = property.purchase_age || calculatePurchaseAge(property.purchase_date, data.userSettings.birth_date, currentAge, currentYear);
+
+      let monthlyPayment = property.loan_payments;
+      if (!monthlyPayment && property.loan_amount && property.loan_rate && property.loan_term_months) {
+        monthlyPayment = calculateMonthlyPayment(property.loan_amount, property.loan_rate, property.loan_term_months);
+      }
+
+      if (age === purchaseAge) {
         yearlyExpense += safeNum(property.purchase_price);
         if (property.initial_cost) yearlyExpense += safeNum(property.initial_cost);
         if (property.loan_amount) yearlyIncome += safeNum(property.loan_amount);
       }
 
-      if (age >= property.purchase_age) {
+      if (age >= purchaseAge) {
         if (property.monthly_rent_income) yearlyIncome += safeNum(property.monthly_rent_income) * 12;
         if (property.monthly_maintenance_cost) yearlyExpense += safeNum(property.monthly_maintenance_cost) * 12;
         if (property.annual_property_tax) yearlyExpense += safeNum(property.annual_property_tax);
-        if (property.loan_payments) yearlyExpense += safeNum(property.loan_payments) * 12;
+
+        if (monthlyPayment && property.loan_term_months) {
+          const monthsElapsed = (age - purchaseAge) * 12;
+          if (monthsElapsed < property.loan_term_months) {
+            yearlyExpense += monthlyPayment * 12;
+          }
+        }
       }
 
       if (property.sale_date) {
-        const saleYear = new Date(property.sale_date).getFullYear();
-        const saleAge = age - (currentYear - saleYear);
-        if (age === saleAge) {
+        const saleYear = new Date(property.sale_date + '-01').getFullYear();
+        const saleMonth = new Date(property.sale_date + '-01').getMonth();
+        const ageAtSale = saleYear - new Date(data.userSettings.birth_date).getFullYear();
+
+        if (age === ageAtSale) {
           if (property.sale_price) yearlyIncome += safeNum(property.sale_price);
           if (property.sale_cost) yearlyExpense += safeNum(property.sale_cost);
-          if (property.loan_amount && property.loan_payments) {
-            const monthsElapsed = (saleAge - property.purchase_age) * 12;
-            const remainingBalance = Math.max(0, safeNum(property.loan_amount) - safeNum(property.loan_payments) * monthsElapsed);
-            yearlyExpense += remainingBalance;
+
+          if (property.loan_amount && property.loan_rate && property.loan_term_months && monthlyPayment) {
+            const monthlyRate = property.loan_rate / 100 / 12;
+            const monthsElapsed = (ageAtSale - purchaseAge) * 12;
+            let balance = property.loan_amount;
+
+            for (let m = 0; m < monthsElapsed && m < property.loan_term_months; m++) {
+              const interest = balance * monthlyRate;
+              const principal = monthlyPayment - interest;
+              balance -= principal;
+            }
+
+            if (balance > 0) {
+              yearlyExpense += balance;
+            }
           }
         }
       }

@@ -70,13 +70,11 @@ export function AssetsTab({
     const realEstate = {
       name: formData.get('re_name') as string,
       purchase_date: formData.get('re_purchase_date') as string,
-      purchase_age: parseInt(formData.get('re_purchase_age') as string) || 30,
       purchase_price: parseInt(formData.get('re_price') as string) || 0,
       initial_cost: parseInt(formData.get('re_initial_cost') as string) || undefined,
       loan_amount: parseInt(formData.get('re_loan_amount') as string) || undefined,
       loan_rate: parseFloat(formData.get('re_loan_rate') as string) || undefined,
       loan_term_months: parseInt(formData.get('re_loan_term_months') as string) || undefined,
-      loan_payments: parseInt(formData.get('re_loan_payments') as string) || undefined,
       monthly_rent_income: parseInt(formData.get('re_rent_income') as string) || undefined,
       monthly_maintenance_cost: parseInt(formData.get('re_maintenance_cost') as string) || undefined,
       annual_property_tax: parseInt(formData.get('re_tax') as string) || undefined,
@@ -100,13 +98,11 @@ export function AssetsTab({
     if (form) {
       (form.elements.namedItem('re_name') as HTMLInputElement).value = re.name;
       (form.elements.namedItem('re_purchase_date') as HTMLInputElement).value = re.purchase_date || '';
-      (form.elements.namedItem('re_purchase_age') as HTMLInputElement).value = re.purchase_age.toString();
       (form.elements.namedItem('re_price') as HTMLInputElement).value = re.purchase_price.toString();
       (form.elements.namedItem('re_initial_cost') as HTMLInputElement).value = re.initial_cost?.toString() || '';
       (form.elements.namedItem('re_loan_amount') as HTMLInputElement).value = re.loan_amount?.toString() || '';
       (form.elements.namedItem('re_loan_rate') as HTMLInputElement).value = re.loan_rate?.toString() || '';
       (form.elements.namedItem('re_loan_term_months') as HTMLInputElement).value = re.loan_term_months?.toString() || '';
-      (form.elements.namedItem('re_loan_payments') as HTMLInputElement).value = re.loan_payments?.toString() || '';
       (form.elements.namedItem('re_rent_income') as HTMLInputElement).value = re.monthly_rent_income?.toString() || '';
       (form.elements.namedItem('re_maintenance_cost') as HTMLInputElement).value = re.monthly_maintenance_cost?.toString() || '';
       (form.elements.namedItem('re_tax') as HTMLInputElement).value = re.annual_property_tax?.toString() || '';
@@ -353,7 +349,7 @@ export function AssetsTab({
               />
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">購入価格</label>
               <div className="flex items-center">
@@ -377,19 +373,6 @@ export function AssetsTab({
                   className="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm"
                 />
                 <span className="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">購入年齢</label>
-              <div className="flex items-center">
-                <input
-                  type="number"
-                  name="re_purchase_age"
-                  placeholder="30"
-                  className="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm"
-                  required
-                />
-                <span className="ml-2 text-gray-500 text-sm whitespace-nowrap">歳</span>
               </div>
             </div>
           </div>
@@ -423,30 +406,16 @@ export function AssetsTab({
                 </div>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">返済回数</label>
-                <div className="flex items-center">
-                  <input
-                    type="number"
-                    name="re_loan_term_months"
-                    placeholder="420"
-                    className="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm"
-                  />
-                  <span className="ml-2 text-gray-500 text-sm whitespace-nowrap">回</span>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">月額返済額</label>
-                <div className="flex items-center">
-                  <input
-                    type="number"
-                    name="re_loan_payments"
-                    placeholder="5"
-                    className="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm"
-                  />
-                  <span className="ml-2 text-gray-500 text-sm whitespace-nowrap">万円</span>
-                </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">返済回数</label>
+              <div className="flex items-center">
+                <input
+                  type="number"
+                  name="re_loan_term_months"
+                  placeholder="420"
+                  className="flex-1 min-w-0 rounded-md border-gray-300 border p-2 text-sm"
+                />
+                <span className="ml-2 text-gray-500 text-sm whitespace-nowrap">回</span>
               </div>
             </div>
           </div>
@@ -564,9 +533,8 @@ export function AssetsTab({
                     <div>
                       <span className="font-medium">{re.name}</span>
                       <span className="text-gray-600 ml-2">{re.purchase_price}万円</span>
-                      <span className="text-gray-500 ml-2">{re.purchase_age}歳購入</span>
                       {re.purchase_date && (
-                        <span className="text-gray-400 ml-2 text-xs">({re.purchase_date})</span>
+                        <span className="text-gray-500 ml-2">{re.purchase_date}購入</span>
                       )}
                     </div>
                     <div className="text-xs text-gray-500 mt-1 space-x-2">

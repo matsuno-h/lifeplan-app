@@ -56,23 +56,33 @@ export function LoanBalanceTable({ appData }: LoanBalanceTableProps) {
       });
 
       appData.realEstates.forEach((realEstate: RealEstate) => {
-        if (realEstate.loan_amount && realEstate.loan_payments) {
-          if (age >= realEstate.purchase_age) {
-            const monthsFromPurchase = (age - realEstate.purchase_age) * 12;
+        if (realEstate.loan_amount) {
+          const purchaseYear = new Date(realEstate.purchase_date + '-01').getFullYear();
+          const birthYear = new Date(appData.userSettings.birth_date).getFullYear();
+          const purchaseAge = realEstate.purchase_age || (purchaseYear - birthYear);
+
+          let monthlyPayment = realEstate.loan_payments;
+          if (!monthlyPayment && realEstate.loan_rate && realEstate.loan_term_months) {
+            const monthlyRate = realEstate.loan_rate / 100 / 12;
+            monthlyPayment = realEstate.loan_amount * (monthlyRate * Math.pow(1 + monthlyRate, realEstate.loan_term_months)) / (Math.pow(1 + monthlyRate, realEstate.loan_term_months) - 1);
+          }
+
+          if (monthlyPayment && age >= purchaseAge) {
+            const monthsFromPurchase = (age - purchaseAge) * 12;
 
             if (realEstate.loan_rate && realEstate.loan_term_months) {
               const monthlyRate = realEstate.loan_rate / 100 / 12;
               let balance = realEstate.loan_amount;
 
-              for (let month = 0; month < monthsFromPurchase && balance > 0; month++) {
+              for (let month = 0; month < monthsFromPurchase && month < realEstate.loan_term_months && balance > 0; month++) {
                 const interest = balance * monthlyRate;
-                const principal = realEstate.loan_payments - interest;
+                const principal = monthlyPayment - interest;
                 balance -= principal;
               }
 
               loanBalances[`re_${realEstate.id}`] = Math.max(0, balance);
             } else {
-              const totalPaid = realEstate.loan_payments * monthsFromPurchase;
+              const totalPaid = monthlyPayment * monthsFromPurchase;
               const remainingBalance = realEstate.loan_amount - totalPaid;
               loanBalances[`re_${realEstate.id}`] = Math.max(0, remainingBalance);
             }

@@ -103,7 +103,7 @@ export interface RealEstate {
   id: string;
   name: string;
   purchase_date: string;
-  purchase_age: number;
+  purchase_age?: number;
   purchase_price: number;
   initial_cost?: number;
   loan_amount?: number;

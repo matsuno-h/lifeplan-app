@@ -210,7 +210,17 @@ export function CashFlowTable({ data, appData }: CashFlowTableProps) {
       });
 
       appData.realEstates.forEach((property) => {
-        if (age >= property.purchase_age) {
+        const purchaseYear = new Date(property.purchase_date + '-01').getFullYear();
+        const birthYear = new Date(appData.userSettings.birth_date).getFullYear();
+        const purchaseAge = property.purchase_age || (purchaseYear - birthYear);
+
+        let monthlyPayment = property.loan_payments;
+        if (!monthlyPayment && property.loan_amount && property.loan_rate && property.loan_term_months) {
+          const monthlyRate = property.loan_rate / 100 / 12;
+          monthlyPayment = property.loan_amount * (monthlyRate * Math.pow(1 + monthlyRate, property.loan_term_months)) / (Math.pow(1 + monthlyRate, property.loan_term_months) - 1);
+        }
+
+        if (age >= purchaseAge) {
           if (property.monthly_rent_income) {
             incomeDetails[`${property.name} (賃料)`] = property.monthly_rent_income * 12;
             totalIncome += property.monthly_rent_income * 12;
@@ -223,9 +233,12 @@ export function CashFlowTable({ data, appData }: CashFlowTableProps) {
             housingDetails[`${property.name} (税金)`] = property.annual_property_tax;
             housingCost += property.annual_property_tax;
           }
-          if (property.loan_payments) {
-            housingDetails[`${property.name} (ローン)`] = property.loan_payments * 12;
-            housingCost += property.loan_payments * 12;
+          if (monthlyPayment && property.loan_term_months) {
+            const monthsFromPurchase = (age - purchaseAge) * 12;
+            if (monthsFromPurchase < property.loan_term_months) {
+              housingDetails[`${property.name} (ローン)`] = monthlyPayment * 12;
+              housingCost += monthlyPayment * 12;
+            }
           }
         }
       });
