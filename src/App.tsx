@@ -106,7 +106,7 @@ function AppContent() {
 
   useEffect(() => {
     if (!appData.goals) {
-      setAppData((prev) => ({
+      setDataWithoutSave((prev) => ({
         ...prev,
         goals: {
           q1: '',
@@ -116,7 +116,7 @@ function AppContent() {
         },
       }));
     }
-  }, [appData.goals, setAppData]);
+  }, [appData.goals, setDataWithoutSave]);
 
   if (authLoading || dataLoading) {
     return (
@@ -177,7 +177,11 @@ function AppContent() {
         };
 
         setDataWithoutSave(validatedData);
-        alert('データを読み込みました');
+        if (user && confirm('データを読み込みました。データベースに保存しますか？')) {
+          setAppData(validatedData);
+        } else {
+          alert('データを読み込みました（保存されていません）');
+        }
       } catch (error) {
         alert('ファイルの読み込みに失敗しました');
         console.error(error);
