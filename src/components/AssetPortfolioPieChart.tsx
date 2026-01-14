@@ -28,7 +28,6 @@ const ASSET_TYPE_COLORS: { [key: string]: string } = {
 };
 
 const SAVINGS_COLOR = '#22c55e';
-const REAL_ESTATE_COLOR = '#f97316';
 
 export function AssetPortfolioPieChart({ appData }: AssetPortfolioPieChartProps) {
   const currentYear = new Date().getFullYear();
@@ -105,30 +104,6 @@ export function AssetPortfolioPieChart({ appData }: AssetPortfolioPieChartProps)
       }
     });
 
-    let totalRealEstateValue = 0;
-    appData.realEstates.forEach((property) => {
-      const purchaseYear = property.purchase_date
-        ? new Date(property.purchase_date + '-01').getFullYear()
-        : currentYear;
-      const purchaseAge = property.purchase_age || (purchaseYear - userBirthYear);
-
-      if (age >= purchaseAge) {
-        const hasSold = property.sale_date
-          ? age >= new Date(property.sale_date + '-01').getFullYear() - userBirthYear
-          : false;
-
-        if (!hasSold) {
-          totalRealEstateValue += property.purchase_price;
-        }
-      }
-    });
-
-    if (totalRealEstateValue > 0) {
-      labels.push('不動産');
-      values.push(Math.round(totalRealEstateValue));
-      colors.push(REAL_ESTATE_COLOR);
-    }
-
     if (cashBalance > 0) {
       labels.push('貯蓄');
       values.push(Math.round(cashBalance));
@@ -187,7 +162,7 @@ export function AssetPortfolioPieChart({ appData }: AssetPortfolioPieChartProps)
     return (
       <div className="bg-white rounded-lg shadow-md p-6">
         <h2 className="text-xl font-bold mb-4 border-b pb-2 text-gray-700">
-          資産ポートフォリオ
+          金融資産ポートフォリオ
         </h2>
         <div className="text-center text-gray-500 py-8">
           資産データがありません
@@ -199,7 +174,7 @@ export function AssetPortfolioPieChart({ appData }: AssetPortfolioPieChartProps)
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
       <h2 className="text-xl font-bold mb-4 border-b pb-2 text-gray-700">
-        資産ポートフォリオ
+        金融資産ポートフォリオ
       </h2>
 
       <div className="mb-6 flex items-center gap-4">
