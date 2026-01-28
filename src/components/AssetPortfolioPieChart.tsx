@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Pie } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { AppData } from '../types';
@@ -40,7 +40,7 @@ export function AssetPortfolioPieChart({ appData }: AssetPortfolioPieChartProps)
   const [selectedAge, setSelectedAge] = useState(currentAge);
   const selectedYear = currentYear + (selectedAge - currentAge);
 
-  const calculatePortfolioAtAge = (age: number): PortfolioData => {
+  const calculatePortfolioAtAge = useCallback((age: number): PortfolioData => {
     const labels: string[] = [];
     const values: number[] = [];
     const colors: string[] = [];
@@ -51,50 +51,59 @@ export function AssetPortfolioPieChart({ appData }: AssetPortfolioPieChartProps)
 
     const assetTypeBalances: { [type: string]: number } = {};
 
-    for (let i = 0; i < yearsFromNow; i++) {
-      const ageAtCalc = currentAge + i;
-
+    if (yearsFromNow === 0) {
       appData.assets.forEach((asset) => {
-        const shouldContribute = !asset.withdrawal_age || ageAtCalc < asset.withdrawal_age;
-        const belowEndAge = !asset.contribution_end_age || ageAtCalc <= asset.contribution_end_age;
-
-        if (shouldContribute && belowEndAge && asset.yearly_contribution > 0) {
-          cashBalance -= asset.yearly_contribution;
-        }
-
-        if (asset.withdrawal_age && ageAtCalc >= asset.withdrawal_age && asset.withdrawal_amount) {
-          cashBalance += asset.withdrawal_amount;
+        if (asset.current_value > 0) {
+          const assetType = asset.asset_type || '投資信託';
+          assetTypeBalances[assetType] = (assetTypeBalances[assetType] || 0) + asset.current_value;
         }
       });
-
-      cashBalance = cashBalance * (1 + savingsInterestRate);
-    }
-
-    appData.assets.forEach((asset) => {
-      let balance = asset.current_value;
-
+    } else {
       for (let i = 0; i < yearsFromNow; i++) {
         const ageAtCalc = currentAge + i;
-        balance = balance * (1 + asset.return_rate / 100);
 
-        const shouldContribute = !asset.withdrawal_age || ageAtCalc < asset.withdrawal_age;
-        const belowEndAge = !asset.contribution_end_age || ageAtCalc <= asset.contribution_end_age;
+        appData.assets.forEach((asset) => {
+          const shouldContribute = !asset.withdrawal_age || ageAtCalc < asset.withdrawal_age;
+          const belowEndAge = !asset.contribution_end_age || ageAtCalc <= asset.contribution_end_age;
 
-        if (shouldContribute && belowEndAge && asset.yearly_contribution > 0) {
-          balance += asset.yearly_contribution;
-        }
+          if (shouldContribute && belowEndAge && asset.yearly_contribution > 0) {
+            cashBalance -= asset.yearly_contribution;
+          }
 
-        if (asset.withdrawal_age && ageAtCalc >= asset.withdrawal_age && asset.withdrawal_amount) {
-          const withdrawal = Math.min(asset.withdrawal_amount, balance);
-          balance -= withdrawal;
-        }
+          if (asset.withdrawal_age && ageAtCalc >= asset.withdrawal_age && asset.withdrawal_amount) {
+            cashBalance += asset.withdrawal_amount;
+          }
+        });
+
+        cashBalance = cashBalance * (1 + savingsInterestRate);
       }
 
-      if (balance > 0) {
-        const assetType = asset.asset_type || '投資信託';
-        assetTypeBalances[assetType] = (assetTypeBalances[assetType] || 0) + balance;
-      }
-    });
+      appData.assets.forEach((asset) => {
+        let balance = asset.current_value;
+
+        for (let i = 0; i < yearsFromNow; i++) {
+          const ageAtCalc = currentAge + i;
+          balance = balance * (1 + asset.return_rate / 100);
+
+          const shouldContribute = !asset.withdrawal_age || ageAtCalc < asset.withdrawal_age;
+          const belowEndAge = !asset.contribution_end_age || ageAtCalc <= asset.contribution_end_age;
+
+          if (shouldContribute && belowEndAge && asset.yearly_contribution > 0) {
+            balance += asset.yearly_contribution;
+          }
+
+          if (asset.withdrawal_age && ageAtCalc >= asset.withdrawal_age && asset.withdrawal_amount) {
+            const withdrawal = Math.min(asset.withdrawal_amount, balance);
+            balance -= withdrawal;
+          }
+        }
+
+        if (balance > 0) {
+          const assetType = asset.asset_type || '投資信託';
+          assetTypeBalances[assetType] = (assetTypeBalances[assetType] || 0) + balance;
+        }
+      });
+    }
 
     Object.entries(assetTypeBalances).forEach(([type, balance]) => {
       if (balance > 0) {
@@ -111,9 +120,9 @@ export function AssetPortfolioPieChart({ appData }: AssetPortfolioPieChartProps)
     }
 
     return { labels, values, colors };
-  };
+  }, [currentAge, appData.userSettings.current_savings, appData.userSettings.savings_interest_rate, appData.assets]);
 
-  const portfolioData = useMemo(() => calculatePortfolioAtAge(selectedAge), [selectedAge, appData]);
+  const portfolioData = useMemo(() => calculatePortfolioAtAge(selectedAge), [selectedAge, calculatePortfolioAtAge]);
 
   const totalValue = portfolioData.values.reduce((sum, val) => sum + val, 0);
 
